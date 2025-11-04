@@ -4,13 +4,20 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,91 +50,152 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     var inputText by remember { mutableStateOf("") }
     var showModelSelector by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("AI Chat") },
-                actions = {
-                    TextButton(onClick = { showModelSelector = true }) {
-                        Text("Models")
+    Column(Modifier.fillMaxSize()) {
+        // Header with gradient
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            "AI Assistant",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            if (currentModelId != null) "Model loaded" else "No model loaded",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                    TextButton(onClick = { showModelSelector = !showModelSelector }) {
+                        Text("Models", fontWeight = FontWeight.Medium)
                     }
                 }
-            )
+            }
         }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            // Status bar
+
+        // Status bar
+        if (statusMessage.isNotEmpty() || downloadProgress != null) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                tonalElevation = 2.dp
+                color = MaterialTheme.colorScheme.secondaryContainer
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = statusMessage,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     downloadProgress?.let { progress ->
+                        Spacer(Modifier.height(8.dp))
                         LinearProgressIndicator(
                             progress = { progress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         )
                     }
                 }
             }
+        }
 
-            // Model selector (collapsible)
-            if (showModelSelector) {
-                ModelSelector(
-                    models = availableModels,
-                    currentModelId = currentModelId,
-                    onDownload = { modelId -> viewModel.downloadModel(modelId) },
-                    onLoad = { modelId -> viewModel.loadModel(modelId) },
-                    onRefresh = { viewModel.refreshModels() },
-                    onClose = { showModelSelector = false }
-                )
-            }
+        // Model selector (collapsible)
+        if (showModelSelector) {
+            ModelSelector(
+                models = availableModels,
+                currentModelId = currentModelId,
+                onDownload = { modelId -> viewModel.downloadModel(modelId) },
+                onLoad = { modelId -> viewModel.loadModel(modelId) },
+                onRefresh = { viewModel.refreshModels() },
+                onClose = { showModelSelector = false }
+            )
+        }
 
-            // Messages List
-            val listState = rememberLazyListState()
+        // Messages List
+        val listState = rememberLazyListState()
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(messages) { message ->
-                    MessageBubble(message)
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (messages.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "👋",
+                                style = MaterialTheme.typography.displayMedium
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                "Start a conversation",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Ask me anything about your travel plans",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
-
-            // Auto-scroll to bottom when new messages arrive
-            LaunchedEffect(messages.size) {
-                if (messages.isNotEmpty()) {
-                    listState.animateScrollToItem(messages.size - 1)
-                }
+            
+            items(messages) { message ->
+                MessageBubble(message)
             }
+        }
 
-            // Input Field
+        // Auto-scroll to bottom when new messages arrive
+        LaunchedEffect(messages.size) {
+            if (messages.isNotEmpty()) {
+                listState.animateScrollToItem(messages.size - 1)
+            }
+        }
+
+        // Input Field
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 8.dp
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                TextField(
+                OutlinedTextField(
                     value = inputText,
                     onValueChange = { inputText = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Type a message...") },
-                    enabled = !isLoading && currentModelId != null
+                    placeholder = { Text("Type your message...") },
+                    enabled = !isLoading && currentModelId != null,
+                    shape = RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    ),
+                    maxLines = 4
                 )
 
                 Button(
@@ -137,9 +205,15 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                             inputText = ""
                         }
                     },
-                    enabled = !isLoading && inputText.isNotBlank() && currentModelId != null
+                    enabled = !isLoading && inputText.isNotBlank() && currentModelId != null,
+                    modifier = Modifier.size(56.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
-                    Text("Send")
+                    Icon(Icons.Filled.Send, contentDescription = "Send")
                 }
             }
         }
@@ -148,26 +222,45 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
 
 @Composable
 fun MessageBubble(message: ChatMessage) {
-    Card(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (message.isUser)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.secondaryContainer
-        )
+        horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = if (message.isUser) "You" else "AI",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        Card(
+            modifier = Modifier.widthIn(max = 280.dp),
+            shape = RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 16.dp,
+                bottomStart = if (message.isUser) 16.dp else 4.dp,
+                bottomEnd = if (message.isUser) 4.dp else 16.dp
+            ),
+            colors = CardDefaults.cardColors(
+                containerColor = if (message.isUser)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.surfaceVariant
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 1.dp
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = message.text,
-                style = MaterialTheme.typography.bodyMedium
-            )
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = if (message.isUser) "You" else "AI",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (message.isUser)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = message.text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
@@ -184,36 +277,46 @@ fun ModelSelector(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 4.dp
+        shadowElevation = 4.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Available Models",
-                    style = MaterialTheme.typography.titleMedium
+                    text = "AI Models",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
                 )
-                Row {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = onRefresh) {
                         Text("Refresh")
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
                     TextButton(onClick = onClose) {
                         Text("Close")
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             if (models.isEmpty()) {
-                Text(
-                    text = "No models available. Initializing...",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "No models available. Initializing...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 300.dp),
@@ -242,36 +345,53 @@ fun ModelItem(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isLoaded)
                 MaterialTheme.colorScheme.tertiaryContainer
             else
                 MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isLoaded) 2.dp else 0.dp
         )
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = model.name,
-                style = MaterialTheme.typography.titleSmall
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
             )
 
             if (isLoaded) {
-                Text(
-                    text = "✓ Currently Loaded",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.tertiary,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "✓ Active",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onTertiary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
             } else {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .padding(top = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
                         onClick = onDownload,
                         modifier = Modifier.weight(1f),
-                        enabled = !model.isDownloaded
+                        enabled = !model.isDownloaded,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary
+                        )
                     ) {
                         Text(if (model.isDownloaded) "Downloaded" else "Download")
                     }
@@ -279,7 +399,8 @@ fun ModelItem(
                     Button(
                         onClick = onLoad,
                         modifier = Modifier.weight(1f),
-                        enabled = model.isDownloaded
+                        enabled = model.isDownloaded,
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Text("Load")
                     }

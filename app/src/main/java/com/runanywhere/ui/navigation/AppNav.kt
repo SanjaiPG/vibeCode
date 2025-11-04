@@ -4,6 +4,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -23,7 +26,7 @@ data class BottomItem(val route: String, val label: String, val icon: ImageVecto
 
 val bottomItems = listOf(
     BottomItem(AppRoute.Home.route, "Home", Icons.Filled.Home),
-    BottomItem(AppRoute.LikedPlans.route, "Liked Plans", Icons.Filled.Favorite),
-    BottomItem(AppRoute.LikedDestinations.route, "Liked Destinations", Icons.Filled.FavoriteBorder),
-    BottomItem(AppRoute.Chat.route, "Chat Bot", Icons.Filled.Home),
+    BottomItem(AppRoute.LikedPlans.route, "Plans", Icons.Filled.List),
+    BottomItem(AppRoute.LikedDestinations.route, "Places", Icons.Filled.LocationOn),
+    BottomItem(AppRoute.Chat.route, "AI Chat", Icons.Filled.Info),
 )
