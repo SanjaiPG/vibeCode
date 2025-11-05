@@ -31,6 +31,6 @@ data class BottomItem(val route: String, val label: String, val icon: ImageVecto
 val bottomItems = listOf(
     BottomItem(AppRoute.Home.route, "Home", Icons.Filled.Home),
     BottomItem(AppRoute.LikedDestinations.route, "Wishlist", Icons.Filled.Favorite),
-    BottomItem(AppRoute.AllPlans.route, "Plans", Icons.Filled.List),
+    BottomItem(AppRoute.AllPlans.route, "My Plans", Icons.Filled.List),
     BottomItem(AppRoute.Chat.route, "Chatbot", Icons.Filled.Info),
 )

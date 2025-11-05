@@ -15,6 +15,9 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,7 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.runanywhere.startup_hackathon20.data.DI
 import androidx.compose.runtime.collectAsState
+import com.google.android.gms.maps.CameraUpdateFactory
 import kotlinx.coroutines.flow.StateFlow
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -583,69 +590,310 @@ fun MapScreen(
             null
         )
     }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedRegion by remember { mutableStateOf("All") }
 
-    Column(
-        Modifier
+    // Group destinations by continent/region
+    val destinationsByRegion = remember(destinations) {
+        destinations.groupBy { dest ->
+            when {
+                dest.country in listOf("USA", "Canada", "Mexico", "Brazil") -> "Americas"
+                dest.country in listOf(
+                    "UK",
+                    "France",
+                    "Italy",
+                    "Spain",
+                    "Germany",
+                    "Russia",
+                    "Netherlands",
+                    "Switzerland",
+                    "Greece"
+                ) -> "Europe"
+
+                dest.country in listOf(
+                    "India",
+                    "China",
+                    "Japan",
+                    "Thailand",
+                    "Singapore",
+                    "Malaysia",
+                    "Indonesia",
+                    "South Korea",
+                    "UAE"
+                ) -> "Asia"
+
+                dest.country in listOf("Australia", "New Zealand") -> "Oceania"
+                dest.country in listOf("South Africa", "Egypt", "Morocco") -> "Africa"
+                else -> "Other"
+            }
+        }
+    }
+
+    val regions = listOf("All") + destinationsByRegion.keys.sorted()
+
+    // Filter destinations
+    val filteredDestinations = remember(searchQuery, selectedRegion, destinations) {
+        val regionFiltered = if (selectedRegion == "All") {
+            destinations
+        } else {
+            destinationsByRegion[selectedRegion] ?: emptyList()
+        }
+
+        if (searchQuery.isBlank()) {
+            regionFiltered
+        } else {
+            regionFiltered.filter {
+                it.name.contains(searchQuery, ignoreCase = true) ||
+                        it.country.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F9FF))
-    ) {
-        // Header with back button
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 4.dp
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF0EA5E9),
-                                Color(0xFF3B82F6)
-                            )
-                        )
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0C4A6E),
+                        Color(0xFF075985),
+                        Color(0xFF0369A1)
                     )
+                )
+            )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Modern Header with Search
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.Transparent
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        IconButton(
-                            onClick = onBack,
-                            modifier = Modifier
-                                .size(44.dp)
-                                .background(
-                                    Color.White.copy(alpha = 0.2f),
-                                    CircleShape
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF0EA5E9).copy(alpha = 0.95f),
+                                    Color(0xFF0284C7).copy(alpha = 0.9f)
                                 )
+                            )
+                        )
+                        .padding(20.dp)
+                ) {
+                    // Top row with back button and title
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            IconButton(
+                                onClick = onBack,
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                            ) {
+                                Icon(
+                                    Icons.Filled.ArrowBack,
+                                    contentDescription = "Back",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Column {
+                                Text(
+                                    "🗺️ Explore World",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    "${filteredDestinations.size} destinations",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Search Bar
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp)),
+                        placeholder = {
+                            Text(
+                                "Search destinations or countries...",
+                                color = Color.Gray.copy(alpha = 0.7f)
+                            )
+                        },
+                        leadingIcon = {
                             Icon(
-                                Icons.Filled.LocationOn,
-                                contentDescription = "Back",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
+                                Icons.Filled.Search,
+                                contentDescription = "Search",
+                                tint = Color(0xFF0EA5E9)
+                            )
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(
+                                        Icons.Filled.Close,
+                                        contentDescription = "Clear",
+                                        tint = Color.Gray
+                                    )
+                                }
+                            }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Region Filter Chips
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(regions) { region ->
+                            FilterChip(
+                                selected = selectedRegion == region,
+                                onClick = { selectedRegion = region },
+                                label = {
+                                    Text(
+                                        when (region) {
+                                            "All" -> "🌍 All"
+                                            "Asia" -> "🌏 Asia"
+                                            "Europe" -> "🇪🇺 Europe"
+                                            "Americas" -> "🌎 Americas"
+                                            "Africa" -> "🌍 Africa"
+                                            "Oceania" -> "🇦🇺 Oceania"
+                                            else -> region
+                                        }
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Color.White,
+                                    selectedLabelColor = Color(0xFF0EA5E9),
+                                    containerColor = Color.White.copy(alpha = 0.2f),
+                                    labelColor = Color.White
+                                )
                             )
                         }
+                    }
+                }
+            }
 
-                        Column {
-                            Text(
-                                "World Destinations Map",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+            // Destinations Grid
+            if (filteredDestinations.isEmpty()) {
+                // Empty state
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            "🔍",
+                            style = MaterialTheme.typography.displayLarge
+                        )
+                        Text(
+                            "No destinations found",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            "Try a different search or filter",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                        Button(
+                            onClick = {
+                                searchQuery = ""
+                                selectedRegion = "All"
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White
                             )
-                            Text(
-                                "${destinations.size} destinations to explore",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.9f)
+                        ) {
+                            Text("Clear Filters", color = Color(0xFF0EA5E9))
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // Group by country for better organization
+                    val groupedByCountry = filteredDestinations.groupBy { it.country }
+
+                    groupedByCountry.forEach { (country, destinations) ->
+                        item {
+                            // Country Header
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            ) {
+                                Surface(
+                                    color = Color.White.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        country,
+                                        modifier = Modifier.padding(
+                                            horizontal = 12.dp,
+                                            vertical = 6.dp
+                                        ),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                                Text(
+                                    "${destinations.size}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.White.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+
+                        items(destinations) { destination ->
+                            MapDestinationCard(
+                                destination = destination,
+                                isLiked = likedDestinations.contains(destination.id),
+                                onClick = { selectedDestination = destination },
+                                onToggleLike = {
+                                    if (likedDestinations.contains(destination.id)) {
+                                        repo.unlikeDestination(destination.id)
+                                    } else {
+                                        repo.likeDestination(destination.id)
+                                    }
+                                }
                             )
                         }
                     }
@@ -653,7 +901,7 @@ fun MapScreen(
             }
         }
 
-        // Show destination details if one is selected
+        // Destination Details Dialog
         if (selectedDestination != null) {
             DestinationDetailsDialog(
                 destination = selectedDestination!!,
@@ -672,85 +920,166 @@ fun MapScreen(
                 }
             )
         }
+    }
+}
 
-        // Map content area with all destinations
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+@Composable
+fun MapDestinationCard(
+    destination: com.runanywhere.startup_hackathon20.data.model.Destination,
+    isLiked: Boolean,
+    onClick: () -> Unit,
+    onToggleLike: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 6.dp,
+            pressedElevation = 12.dp
+        )
+    ) {
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFF0F9FF))
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Section header
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFF3B82F6)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text("🗺️", fontSize = 32.sp)
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "Explore the World",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
+            // Destination Icon with Gradient
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF0EA5E9),
+                                Color(0xFF3B82F6),
+                                Color(0xFF2563EB)
                             )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        destination.name.take(2).uppercase(),
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(16.dp))
+
+            // Destination Info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    destination.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1F2937)
+                )
+
+                Spacer(Modifier.height(4.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = Color(0xFF6B7280)
+                    )
+                    Text(
+                        destination.country,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF6B7280)
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Rating
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Star,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = Color(0xFFFBBF24)
+                        )
+                        Text(
+                            "${destination.rating}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F2937)
+                        )
+                    }
+
+                    // Currency
+                    Surface(
+                        color = Color(0xFFDBEAFE),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            destination.currencyCode,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color(0xFF1E40AF),
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    // Hotels count
+                    if (destination.hotels.isNotEmpty()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text("🏨", fontSize = 14.sp)
                             Text(
-                                "Tap any destination to see details, hotels, restaurants & reviews",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.9f)
+                                "${destination.hotels.size}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color(0xFF6B7280)
                             )
                         }
                     }
                 }
             }
 
-            // Group destinations by country
-            val groupedDestinations = destinations.groupBy { it.country }
+            Spacer(Modifier.width(12.dp))
 
-            groupedDestinations.forEach { (country, countryDestinations) ->
-                item {
-                    // Country header
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            Icons.Filled.Place,
-                            contentDescription = null,
-                            tint = Color(0xFF0EA5E9),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            country,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1F2937)
-                        )
-                        Text(
-                            "(${countryDestinations.size})",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF6B7280)
-                        )
-                    }
-                }
-
-                items(countryDestinations) { destination ->
-                    DestinationMapCard(
-                        destination = destination,
-                        isLiked = likedDestinations.contains(destination.id),
-                        onClick = { selectedDestination = destination }
+            // Like Button
+            IconButton(
+                onClick = onToggleLike,
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        if (isLiked) Color(0xFFDBEAFE) else Color(0xFFF3F4F6),
+                        CircleShape
                     )
-                }
+            ) {
+                Icon(
+                    if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                    contentDescription = if (isLiked) "Unlike" else "Like",
+                    tint = if (isLiked) Color(0xFF3B82F6) else Color(0xFF9CA3AF),
+                    modifier = Modifier.size(24.dp)
+                )
             }
         }
     }
@@ -1343,7 +1672,10 @@ fun DestinationDetailsDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(onBack: () -> Unit = {}) {
+fun ProfileScreen(
+    onBack: () -> Unit = {},
+    onLogout: () -> Unit = {}
+) {
     val repo = remember { DI.repo }
     val user = remember { repo.getCurrentUser() }
 
@@ -1799,6 +2131,31 @@ fun ProfileScreen(onBack: () -> Unit = {}) {
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
+            }
+
+            // Logout Button
+            OutlinedButton(
+                onClick = onLogout,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFFEF4444)
+                ),
+                border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFEF4444))
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("🚪", fontSize = 20.sp)
+                    Text(
+                        "Logout",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             Spacer(Modifier.height(16.dp))

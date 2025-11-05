@@ -263,26 +263,30 @@ class ChatViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Simplified, concise prompt for faster generation
-                val prompt = """Create a travel plan:
-                    |Trip: ${form.from} to ${form.to}
-                    |Dates: ${form.startDate} (${form.nights} nights)
-                    |People: ${form.people}, Budget: ₹${form.budget}
+                // Ultra-concise prompt for 3x faster generation
+                val prompt =
+                    """Plan: ${form.from} → ${form.to} | ${form.nights}N | ${form.people}p | ₹${form.budget}
+                    |Start: ${form.startDate}
                     |
-                    |Provide:
-                    |Day 1-${form.nights}: Activities, timings, costs
-                    |Hotels: 2-3 recommendations
-                    |Transport: Best options
-                    |Must-see: Top 3 attractions
-                    |Food: Local dishes to try
-                    |Tips: Important notes
-                    |
-                    |Keep it concise and practical.""".trimMargin()
+                    |Day-by-day (morning/afternoon/evening):
+                    |Hotels (name, price, rating):
+                    |Transport tips:
+                    |Must-see (top 3):
+                    |Food to try:
+                    |Budget breakdown:
+                    |Keep brief.""".trimMargin()
 
                 var aiItinerary = ""
+                var tokenCount = 0
+                val MAX_TOKENS = 300 // Limit to 300 tokens for faster generation (10-15 seconds)
 
                 RunAnywhere.generateStream(prompt).collect { token ->
+                    if (tokenCount >= MAX_TOKENS) {
+                        // Stop after 300 tokens to keep generation fast
+                        return@collect
+                    }
                     aiItinerary += token
+                    tokenCount++
                 }
 
                 // Save plan with complete itinerary
@@ -318,34 +322,36 @@ class ChatViewModel : ViewModel() {
             try {
                 // Add form details as user message
                 val formSummary =
-                    "Generate a ${form.nights}-night travel plan: ${form.from} to ${form.to}, ${form.startDate}, ${form.people} people, ₹${form.budget} budget"
+                    "Plan: ${form.from} to ${form.to}, ${form.nights}N, ${form.people} people, ₹${form.budget}"
                 _messages.value += ChatMessage(formSummary, isUser = true)
 
-                // Simplified prompt for faster generation
-                val prompt = """Create a travel plan:
-                    |Trip: ${form.from} to ${form.to}
-                    |Dates: ${form.startDate} (${form.nights} nights)
-                    |People: ${form.people}, Budget: ₹${form.budget}
+                // Ultra-concise prompt for 3x faster generation  
+                val prompt =
+                    """Plan: ${form.from} → ${form.to} | ${form.nights}N | ${form.people}p | ₹${form.budget}
+                    |Start: ${form.startDate}
                     |
-                    |Provide:
-                    |Day 1-${form.nights}: Activities, timings, costs
-                    |Hotels: 2-3 recommendations
-                    |Transport: Best options
-                    |Must-see: Top 3 attractions
-                    |Food: Local dishes to try
-                    |Tips: Important notes
-                    |
-                    |Keep it concise and practical.""".trimMargin()
+                    |Day-by-day (morning/afternoon/evening):
+                    |Hotels (name, price, rating):
+                    |Transport tips:
+                    |Must-see (top 3):
+                    |Food to try:
+                    |Budget breakdown:
+                    |Keep brief.""".trimMargin()
 
                 var aiItinerary = ""
                 var tokenCount = 0
+                val MAX_TOKENS = 300 // Limit to 300 tokens for faster generation
 
                 RunAnywhere.generateStream(prompt).collect { token ->
+                    if (tokenCount >= MAX_TOKENS) {
+                        // Stop after 300 tokens
+                        return@collect
+                    }
                     aiItinerary += token
                     tokenCount++
 
-                    // Update UI every 5 tokens for faster visual feedback
-                    if (tokenCount % 5 == 0) {
+                    // Update UI every 3 tokens for faster visual feedback (was 5)
+                    if (tokenCount % 3 == 0) {
                         val currentMessages = _messages.value.toMutableList()
                         val planData = PlanDisplayData(
                             from = form.from,

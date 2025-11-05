@@ -24,6 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.runanywhere.startup_hackathon20.data.DI
 import androidx.compose.runtime.collectAsState
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -324,6 +327,57 @@ fun PlanResultScreen(planId: String) {
                                 color = Color(0xFF6B7280)
                             )
                         }
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
+            }
+
+            // Destination Map Section
+            if (destination != null) {
+                Text(
+                    "📍 Destination Location",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                    color = Color(0xFF1F2937)
+                )
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 4.dp
+                    )
+                ) {
+                    val destinationPosition = LatLng(destination.lat, destination.lng)
+                    val cameraPositionState = rememberCameraPositionState {
+                        position = CameraPosition.fromLatLngZoom(destinationPosition, 12f)
+                    }
+
+                    GoogleMap(
+                        modifier = Modifier.fillMaxSize(),
+                        cameraPositionState = cameraPositionState,
+                        uiSettings = MapUiSettings(
+                            myLocationButtonEnabled = false,
+                            zoomControlsEnabled = true,
+                            mapToolbarEnabled = false,
+                            compassEnabled = false,
+                            scrollGesturesEnabled = true,
+                            zoomGesturesEnabled = true
+                        ),
+                        properties = MapProperties(
+                            isBuildingEnabled = true,
+                            isMyLocationEnabled = false
+                        )
+                    ) {
+                        Marker(
+                            state = MarkerState(position = destinationPosition),
+                            title = destination.name,
+                            snippet = destination.country
+                        )
                     }
                 }
 

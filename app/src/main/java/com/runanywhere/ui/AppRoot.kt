@@ -81,9 +81,16 @@ fun AppRoot() {
                 }
 
                 currentRoute == AppRoute.Profile.route -> {
-                    ProfileScreen(onBack = {
-                        currentRoute = AppRoute.Home.route
-                    })
+                    ProfileScreen(
+                        onBack = {
+                            currentRoute = AppRoute.Home.route
+                        },
+                        onLogout = {
+                            // Clear user session and return to login
+                            isLoggedIn = false
+                            currentRoute = AppRoute.Home.route
+                        }
+                    )
                 }
 
                 currentRoute == AppRoute.LikedPlans.route -> {

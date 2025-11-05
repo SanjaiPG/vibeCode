@@ -1,7 +1,10 @@
 package com.runanywhere.startup_hackathon20.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -10,6 +13,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.runanywhere.startup_hackathon20.data.DI
 
 // Common country codes
@@ -58,10 +64,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
     var isRegisterMode by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
-
-    // Country code selection
     var selectedCountryCode by remember { mutableStateOf("+91") }
-    var expandedCountryCode by remember { mutableStateOf(false) }
+    var showCountryDialog by remember { mutableStateOf(false) }
+    var countrySearch by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -216,186 +221,136 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     if (isRegisterMode) {
                         Spacer(Modifier.height(16.dp))
 
+                        // Country code selector as a button
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Country Code Dropdown - Small compact box
-                            ExposedDropdownMenuBox(
-                                expanded = expandedCountryCode,
-                                onExpandedChange = { expandedCountryCode = !expandedCountryCode },
-                                modifier = Modifier.width(100.dp)
-                            ) {
-                                OutlinedTextField(
-                                    value = selectedCountryCode,
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    trailingIcon = {
-                                        Icon(
-                                            Icons.Filled.ArrowDropDown,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    },
-                                    modifier = Modifier.menuAnchor(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    singleLine = true,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                    ),
-                                    textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showCountryDialog = true }
+                                .background(
+                                    MaterialTheme.colorScheme.surface,
+                                    shape = RoundedCornerShape(16.dp)
                                 )
-
-                                ExposedDropdownMenu(
-                                    expanded = expandedCountryCode,
-                                    onDismissRequest = { expandedCountryCode = false }
-                                ) {
-                                    countryCodes.forEach { (code, label) ->
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    "$code $label",
-                                                    style = MaterialTheme.typography.bodyMedium
-                                                )
-                                            },
-                                            onClick = {
-                                                selectedCountryCode = code
-                                                expandedCountryCode = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-
-                            // Phone Number Field - Large rectangle taking remaining space
-                            OutlinedTextField(
-                                value = phone,
-                                onValueChange = { newValue ->
-                                    // Only allow digits and max 10 characters
-                                    val filtered = newValue.filter { it.isDigit() }.take(10)
-                                    phone = filtered
-                                },
-                                label = { Text("Phone Number (Optional)") },
-                                placeholder = { Text("1234567890") },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Filled.Phone,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                },
-                                trailingIcon = {
-                                    // Show character count
-                                    if (phone.isNotEmpty()) {
-                                        Surface(
-                                            color = when {
-                                                phone.length == 10 -> MaterialTheme.colorScheme.primary.copy(
-                                                    alpha = 0.1f
-                                                )
-
-                                                phone.length < 10 -> MaterialTheme.colorScheme.error.copy(
-                                                    alpha = 0.1f
-                                                )
-
-                                                else -> MaterialTheme.colorScheme.surfaceVariant
-                                            },
-                                            shape = RoundedCornerShape(8.dp)
-                                        ) {
-                                            Text(
-                                                "${phone.length}/10",
-                                                modifier = Modifier.padding(
-                                                    horizontal = 8.dp,
-                                                    vertical = 4.dp
-                                                ),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = when {
-                                                    phone.length == 10 -> MaterialTheme.colorScheme.primary
-                                                    phone.length < 10 -> MaterialTheme.colorScheme.error
-                                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                                },
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                },
+                                .padding(vertical = 4.dp, horizontal = 12.dp)
+                        ) {
+                            Text(
+                                countryCodes.find { it.first == selectedCountryCode }?.second
+                                    ?: selectedCountryCode,
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(16.dp),
-                                singleLine = true,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = if (phone.isNotEmpty() && phone.length != 10)
-                                        MaterialTheme.colorScheme.error
-                                    else
-                                        MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = if (phone.isNotEmpty() && phone.length != 10)
-                                        MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
-                                    else
-                                        MaterialTheme.colorScheme.outline
-                                ),
-                                isError = phone.isNotEmpty() && phone.length != 10
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Icon(
+                                imageVector = Icons.Filled.ArrowDropDown,
+                                contentDescription = "Open country code selector"
                             )
                         }
 
-                        // Helper text / validation message - shown below the row
-                        if (phone.isNotEmpty()) {
-                            Spacer(Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(start = 108.dp), // Align with phone field
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                if (phone.length == 10) {
-                                    Text(
-                                        "✓",
-                                        color = MaterialTheme.colorScheme.primary,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        "Valid phone number",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                } else {
-                                    Text(
-                                        "⚠",
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                    Text(
-                                        "Must be exactly 10 digits (${10 - phone.length} more needed)",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                }
-                            }
-                        }
+                        Spacer(Modifier.height(8.dp))
 
-                        // Full phone number preview - compact version
-                        if (phone.length == 10) {
-                            Spacer(Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(start = 108.dp), // Align with phone field
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    "📱",
-                                    style = MaterialTheme.typography.bodyMedium
+                        // Phone Number Field
+                        OutlinedTextField(
+                            value = phone,
+                            onValueChange = { newValue ->
+                                // Only allow digits and limit to reasonable length
+                                val filtered = newValue.filter { it.isDigit() }.take(15)
+                                phone = filtered
+                            },
+                            label = { Text("Phone") },
+                            placeholder = { Text("Phone") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.Phone,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
                                 )
-                                Text(
-                                    "$selectedCountryCode $phone",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+
+                        // Country code selector dialog
+                        if (showCountryDialog) {
+                            Dialog(onDismissRequest = { showCountryDialog = false }) {
+                                Card(
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.85f)
+                                ) {
+                                    Column(
+                                        Modifier.padding(16.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Search,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            OutlinedTextField(
+                                                value = countrySearch,
+                                                onValueChange = { countrySearch = it },
+                                                placeholder = { Text("Search country") },
+                                                singleLine = true,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .weight(1f),
+                                                shape = RoundedCornerShape(12.dp),
+                                                colors = OutlinedTextFieldDefaults.colors(
+                                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                                )
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            IconButton(onClick = { showCountryDialog = false }) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.Close,
+                                                    contentDescription = "Close"
+                                                )
+                                            }
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                        LazyColumn {
+                                            val filtered = countryCodes.filter {
+                                                countrySearch.isBlank()
+                                                        || it.first.contains(countrySearch)
+                                                        || it.second.contains(
+                                                    countrySearch,
+                                                    ignoreCase = true
+                                                )
+                                            }
+                                            items(filtered) { code ->
+                                                Row(
+                                                    Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable {
+                                                            selectedCountryCode = code.first
+                                                            showCountryDialog = false
+                                                        }
+                                                        .padding(vertical = 8.dp, horizontal = 8.dp)
+                                                ) {
+                                                    Text(
+                                                        code.second,
+                                                        modifier = Modifier.weight(1f),
+                                                        style = MaterialTheme.typography.bodyMedium
+                                                    )
+                                                    Text(
+                                                        code.first,
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -453,8 +408,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                         errorMessage = "Password must be at least 6 characters"
                                     }
 
-                                    phone.isNotBlank() && phone.length != 10 -> {
-                                        errorMessage = "Phone number must be exactly 10 digits"
+                                    phone.isNotBlank() && phone.length > 15 -> {
+                                        errorMessage = "Phone number is too long"
                                     }
 
                                     else -> {
@@ -463,7 +418,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                             password = password,
                                             name = name,
                                             email = email,
-                                            countryCode = selectedCountryCode,
+                                            countryCode = selectedCountryCode, // use selected country code
                                             phone = phone
                                         )
                                         if (success) {
