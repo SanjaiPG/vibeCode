@@ -742,6 +742,15 @@ fun MapScreen(onBack: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(onBack: () -> Unit = {}) {
+    val repo = remember { DI.repo }
+    val user = remember { repo.getCurrentUser() }
+
+    var isEditing by remember { mutableStateOf(false) }
+    var name by remember { mutableStateOf(user?.name ?: "User") }
+    var email by remember { mutableStateOf(user?.email ?: "user@example.com") }
+    var phone by remember { mutableStateOf(user?.phone ?: "") }
+    var location by remember { mutableStateOf(user?.location ?: "") }
+
     val scrollState = rememberScrollState()
 
     Column(
@@ -824,14 +833,14 @@ fun ProfileScreen(onBack: () -> Unit = {}) {
             }
 
             Text(
-                "John Doe",
+                name,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1F2937)
             )
 
             Text(
-                "johndoe@example.com",
+                email,
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color(0xFF6B7280)
             )
@@ -908,7 +917,7 @@ fun ProfileScreen(onBack: () -> Unit = {}) {
                 }
             }
 
-            // User Details Card
+            // User Details Card with Edit functionality
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -923,25 +932,82 @@ fun ProfileScreen(onBack: () -> Unit = {}) {
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        "Personal Information",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1F2937)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Personal Information",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F2937)
+                        )
+                        IconButton(onClick = { isEditing = !isEditing }) {
+                            Text(
+                                if (isEditing) "✓" else "✏️",
+                                fontSize = 20.sp
+                            )
+                        }
+                    }
 
                     Divider(color = Color(0xFFE5E7EB))
 
-                    ProfileDetailRow("📧", "Email", "johndoe@example.com")
-                    ProfileDetailRow("📱", "Phone", "+1 234 567 8900")
-                    ProfileDetailRow("📍", "Location", "New York, USA")
-                    ProfileDetailRow("🎂", "Member Since", "January 2024")
+                    if (isEditing) {
+                        // Editable fields
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            label = { Text("Name") },
+                            leadingIcon = { Text("👤", fontSize = 20.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = phone,
+                            onValueChange = { phone = it },
+                            label = { Text("Phone") },
+                            leadingIcon = { Text("📱", fontSize = 20.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = location,
+                            onValueChange = { location = it },
+                            label = { Text("Location") },
+                            leadingIcon = { Text("📍", fontSize = 20.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    } else {
+                        // Display mode
+                        ProfileDetailRow("📧", "Email", email)
+                        ProfileDetailRow("📱", "Phone", phone.ifEmpty { "Not set" })
+                        ProfileDetailRow("📍", "Location", location.ifEmpty { "Not set" })
+                        ProfileDetailRow("🎂", "Member Since", "January 2024")
+                    }
                 }
             }
 
             // Action Buttons
             Button(
-                onClick = { /* TODO: Edit profile */ },
+                onClick = {
+                    if (isEditing) {
+                        // Save changes
+                        val updatedUser = com.runanywhere.startup_hackathon20.data.model.User(
+                            email = email,
+                            name = name,
+                            phone = phone,
+                            location = location
+                        )
+                        repo.updateUser(updatedUser)
+                        isEditing = false
+                    } else {
+                        isEditing = true
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -951,7 +1017,7 @@ fun ProfileScreen(onBack: () -> Unit = {}) {
                 )
             ) {
                 Text(
-                    "Edit Profile",
+                    if (isEditing) "Save Changes" else "Edit Profile",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )

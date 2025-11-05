@@ -291,6 +291,10 @@ class TravelRepository {
     private val plans = mutableMapOf<String, Plan>()
     private val likedPlans = mutableSetOf<String>()
 
+    // User management
+    private var currentUser: User? = null
+    private val registeredUsers = mutableMapOf<String, User>()  // email -> User
+
     fun getPopularDestinations(): List<Destination> = destinations
     fun getDestination(id: String): Destination? = destinations.find { it.id == id }
 
@@ -301,4 +305,38 @@ class TravelRepository {
     fun getPlan(planId: String): Plan? = plans[planId]
     fun likePlan(planId: String) { likedPlans += planId }
     fun getLikedPlans(): List<Plan> = likedPlans.mapNotNull { plans[it] }
+
+    // User functions
+    fun registerUser(email: String, name: String, phone: String, location: String): Boolean {
+        if (registeredUsers.containsKey(email)) {
+            return false // User already exists
+        }
+        val user = User(email, name, phone, location)
+        registeredUsers[email] = user
+        currentUser = user
+        return true
+    }
+
+    fun loginUser(email: String, password: String): Boolean {
+        // Simple login - in real app, verify password
+        val user = registeredUsers[email]
+        if (user != null) {
+            currentUser = user
+            return true
+        }
+        // For demo, allow any login and create user
+        val newUser = User(email, "User", "", "")
+        registeredUsers[email] = newUser
+        currentUser = newUser
+        return true
+    }
+
+    fun getCurrentUser(): User? = currentUser
+
+    fun updateUser(user: User) {
+        currentUser = user
+        registeredUsers[user.email] = user
+    }
+
+    fun isLoggedIn(): Boolean = currentUser != null
 }

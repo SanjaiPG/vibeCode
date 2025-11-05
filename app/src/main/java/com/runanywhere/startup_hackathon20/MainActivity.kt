@@ -413,7 +413,7 @@ fun TravelModelSelector(
 @Composable
 fun TravelChatEmptyState(
     isModelLoaded: Boolean,
-    onSettingsClick: () -> Unit
+    onLoadModel: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -464,7 +464,7 @@ fun TravelChatEmptyState(
 
         if (!isModelLoaded) {
             Button(
-                onClick = onSettingsClick,
+                onClick = onLoadModel,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF0EA5E9)
                 ),
@@ -474,15 +474,13 @@ fun TravelChatEmptyState(
                     defaultElevation = 0.dp
                 )
             ) {
-                Icon(
-                    Icons.Filled.Settings,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = Color.White
+                Text(
+                    "🔄",
+                    fontSize = 18.sp
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Configure AI Model",
+                    "Load AI Model",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White,
@@ -791,7 +789,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                         item {
                             TravelChatEmptyState(
                                 isModelLoaded = currentModelId != null,
-                                onSettingsClick = { showModelSelector = true }
+                                onLoadModel = { viewModel.manualLoadModel() }
                             )
                         }
                     }

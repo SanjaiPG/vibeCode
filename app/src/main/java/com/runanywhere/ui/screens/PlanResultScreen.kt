@@ -29,10 +29,11 @@ import com.runanywhere.startup_hackathon20.data.DI
 fun PlanResultScreen(planId: String) {
     val plan = remember { DI.repo.getPlan(planId) }
     val destination = remember {
-        plan?.let { DI.repo.getDestination(it.destinationId) }
+    plan?.let { DI.repo.getDestination(it.destinationId) }
     }
     val scrollState = rememberScrollState()
     var showExportDialog by remember { mutableStateOf(false) }
+    var isSaved by remember { mutableStateOf(false) }
 
     if (plan == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -521,14 +522,19 @@ fun PlanResultScreen(planId: String) {
 
                 OutlinedButton(
                     onClick = {
-                        DI.repo.likePlan(planId)
+                        if (!isSaved) {
+                            DI.repo.likePlan(planId)
+                        }
+                        isSaved = !isSaved
                     },
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
+                    colors = if (isSaved) ButtonDefaults.outlinedButtonColors(
                         contentColor = Color(0xFFEF4444)
+                    ) else ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFF3B82F6)
                     )
                 ) {
                     Icon(
@@ -537,7 +543,10 @@ fun PlanResultScreen(planId: String) {
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Save", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        if (isSaved) "Saved ✓" else "Save",
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
 

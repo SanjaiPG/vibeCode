@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.runanywhere.startup_hackathon20.ChatViewModel
 import com.runanywhere.startup_hackathon20.data.model.PlanForm
@@ -28,7 +29,6 @@ import com.runanywhere.startup_hackathon20.data.model.PlanForm
 fun MakePlanScreen(
     destinationId: String? = null,
     onPlanCreated: (String) -> Unit,
-    onNavigateToChat: () -> Unit = {},
     vm: ChatViewModel = viewModel()
 ) {
     val repo = remember { com.runanywhere.startup_hackathon20.data.DI.repo }
@@ -301,21 +301,84 @@ fun MakePlanScreen(
                 }
             }
 
-            // Status Message
+            // Status Message - Improved UI
             if (modelLoaded == null) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
+                        containerColor = androidx.compose.ui.graphics.Color(0xFFDBEAFE) // Light blue instead of error red
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    Text(
-                        "⚠️ Please load an AI model first from the Chat tab",
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            androidx.compose.foundation.Canvas(
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                drawCircle(
+                                    color = androidx.compose.ui.graphics.Color(0xFF3B82F6),
+                                    radius = size.minDimension / 2
+                                )
+                            }
+                            Column {
+                                Text(
+                                    "AI Model Required",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = androidx.compose.ui.graphics.Color(0xFF1E40AF)
+                                )
+                                Text(
+                                    "Load the model to continue",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = androidx.compose.ui.graphics.Color(0xFF1E40AF)
+                                        .copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+
+                        androidx.compose.material3.Divider(
+                            color = androidx.compose.ui.graphics.Color(0xFF93C5FD),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+
+                        Text(
+                            "💡 Your form data will be preserved during loading",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = androidx.compose.ui.graphics.Color(0xFF1E40AF),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+
+                        // Load Model Button - Improved design
+                        Button(
+                            onClick = { vm.manualLoadModel() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = androidx.compose.ui.graphics.Color(0xFF3B82F6)
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                        ) {
+                            Text(
+                                "🚀",
+                                fontSize = 20.sp
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Load AI Model Now",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
 
@@ -325,9 +388,10 @@ fun MakePlanScreen(
             Button(
                 onClick = {
                     val form = PlanForm(from, to, startDate, nights.toIntOrNull() ?: 3, budget.toIntOrNull() ?: 50000, people.toIntOrNull() ?: 2)
-                    vm.generatePlanFromForm(form) { id ->
+                    // Use generatePlanDirect to skip chatbot and go straight to result screen
+                    vm.generatePlanDirect(form) { id ->
                         onPlanCreated(id)
-                        onNavigateToChat()
+                        // Don't navigate to chat - the onPlanCreated will navigate to plan result
                     }
                 },
                 enabled = !isLoading && modelLoaded != null && from.isNotBlank() && to.isNotBlank() && transportMode.isNotBlank(),

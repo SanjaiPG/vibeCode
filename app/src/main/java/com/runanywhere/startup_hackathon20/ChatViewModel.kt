@@ -55,12 +55,18 @@ class ChatViewModel : ViewModel() {
 
     private var hasStartedLoading = false
 
-    // Call this when user opens chat tab for the first time
-    fun startModelLoading() {
+    // Manual model loading - call this explicitly when user wants to load
+    fun manualLoadModel() {
         if (hasStartedLoading) return
         hasStartedLoading = true
-        Log.i("ChatViewModel", "User opened chat - starting model load...")
+        Log.i("ChatViewModel", "Manual model load requested...")
         autoLoadBestModel()
+    }
+
+    // Call this when user opens chat tab for the first time
+    fun startModelLoading() {
+        // Removed auto-loading - now requires manual trigger
+        Log.i("ChatViewModel", "Chat tab opened - waiting for manual model load...")
     }
 
     private fun autoLoadBestModel() {
@@ -247,8 +253,70 @@ class ChatViewModel : ViewModel() {
         loadAvailableModels()
     }
 
+    // Generate a travel plan using AI WITHOUT displaying in chatbot
+    // This is used when navigating directly to plan result screen
+    fun generatePlanDirect(form: PlanForm, onComplete: (String) -> Unit) {
+        if (_currentModelId.value == null) {
+            _statusMessage.value = "Please load the model first."
+            return
+        }
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // Generate AI-powered itinerary silently (no chat messages)
+                val prompt = """Create a detailed travel itinerary for the following trip:
+                    |From: ${form.from}
+                    |To: ${form.to}
+                    |Start Date: ${form.startDate}
+                    |Duration: ${form.nights} nights
+                    |Number of People: ${form.people}
+                    |Budget: ₹${form.budget}
+                    |
+                    |Please provide:
+                    |1. Daily itinerary with activities, timings, and estimated costs
+                    |2. Recommended accommodations
+                    |3. Transportation suggestions
+                    |4. Must-visit attractions
+                    |5. Food recommendations
+                    |6. Budget breakdown
+                    |7. Travel tips and important notes
+                    |
+                    |Format the response clearly with day-wise breakdown.""".trimMargin()
+
+                var aiItinerary = ""
+
+                RunAnywhere.generateStream(prompt).collect { token ->
+                    aiItinerary += token
+                }
+
+                // Save plan with complete itinerary
+                val title = "${form.from} → ${form.to} (${form.nights} nights)"
+                val id = java.util.UUID.randomUUID().toString()
+                val plan = Plan(
+                    id = id,
+                    title = title,
+                    markdownItinerary = aiItinerary,
+                    destinationId = form.to
+                )
+                DI.repo.savePlan(plan)
+
+                _statusMessage.value = "Plan generated successfully!"
+                onComplete(id)
+            } catch (e: Exception) {
+                _statusMessage.value = "Error generating plan: ${e.message}"
+                Log.e("ChatViewModel", "Error generating plan: ${e.message}", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
     // Generate a travel plan using AI and display it in the chatbot with unique UI
     fun generatePlanFromForm(form: PlanForm, onComplete: (String) -> Unit) {
+        if (_currentModelId.value == null) {
+            _statusMessage.value = "Please load the model first."
+            return
+        }
         viewModelScope.launch {
             _isLoading.value = true
             try {

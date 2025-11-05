@@ -102,9 +102,6 @@ fun AppRoot() {
                         destinationId = selectedDestinationId,
                         onPlanCreated = { planId ->
                             currentRoute = "${AppRoute.PlanResult.base}/$planId"
-                        },
-                        onNavigateToChat = {
-                            currentRoute = AppRoute.Chat.route
                         }
                     )
                 }
