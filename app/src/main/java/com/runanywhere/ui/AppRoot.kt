@@ -17,6 +17,9 @@ fun AppRoot() {
     // Simple state-based navigator
     var currentRoute by remember { mutableStateOf(AppRoute.Home.route) }
 
+    // Track selected destination for plan creation
+    var selectedDestinationId by remember { mutableStateOf<String?>(null) }
+
     // If not logged in, show login screen
     if (!isLoggedIn) {
         LoginScreen(onLoginSuccess = { isLoggedIn = true })
@@ -45,8 +48,28 @@ fun AppRoot() {
             .fillMaxSize()) {
             when {
                 currentRoute == AppRoute.Home.route -> {
-                    HomeScreen(onOpenDestination = { id ->
-                        currentRoute = "${AppRoute.Destination.base}/$id"
+                    HomeScreen(
+                        onOpenDestination = { id ->
+                            currentRoute = "${AppRoute.Destination.base}/$id"
+                        },
+                        onOpenMap = {
+                            currentRoute = AppRoute.Map.route
+                        },
+                        onOpenProfile = {
+                            currentRoute = AppRoute.Profile.route
+                        }
+                    )
+                }
+
+                currentRoute == AppRoute.Map.route -> {
+                    MapScreen(onBack = {
+                        currentRoute = AppRoute.Home.route
+                    })
+                }
+
+                currentRoute == AppRoute.Profile.route -> {
+                    ProfileScreen(onBack = {
+                        currentRoute = AppRoute.Home.route
                     })
                 }
 
@@ -69,14 +92,21 @@ fun AppRoot() {
                 currentRoute.startsWith("${AppRoute.Destination.base}/") -> {
                     val id = currentRoute.substringAfter("${AppRoute.Destination.base}/")
                     DestinationScreen(destinationId = id, onMakePlan = {
+                        selectedDestinationId = id
                         currentRoute = AppRoute.MakePlan.route
                     })
                 }
 
                 currentRoute == AppRoute.MakePlan.route -> {
-                    MakePlanScreen(onPlanCreated = { planId ->
-                        currentRoute = "${AppRoute.PlanResult.base}/$planId"
-                    })
+                    MakePlanScreen(
+                        destinationId = selectedDestinationId,
+                        onPlanCreated = { planId ->
+                            currentRoute = "${AppRoute.PlanResult.base}/$planId"
+                        },
+                        onNavigateToChat = {
+                            currentRoute = AppRoute.Chat.route
+                        }
+                    )
                 }
 
                 currentRoute.startsWith("${AppRoute.PlanResult.base}/") -> {

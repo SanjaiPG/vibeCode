@@ -16,6 +16,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Refresh
@@ -62,7 +64,11 @@ val travelQuickActions = listOf(
     QuickAction("🍽️", "Local Food", "What are the must-try foods in "),
     QuickAction("📸", "Top Attractions", "What are the top attractions in "),
     QuickAction("💰", "Budget Tips", "Give me budget travel tips for "),
-    QuickAction("🗺️", "Itinerary", "Create a 3-day itinerary for ")
+    QuickAction("🗺️", "Itinerary", "Create a 3-day itinerary for "),
+    QuickAction("🎒", "Packing Guide", "What should I pack for "),
+    QuickAction("🚕", "Local Transport", "How to get around in "),
+    QuickAction("🌤️", "Best Time", "What's the best time to visit "),
+    QuickAction("💱", "Currency Info", "Tell me about currency and costs in ")
 )
 
 // Map grid background for travel theme with blue gradient
@@ -710,6 +716,11 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     var inputText by remember { mutableStateOf("") }
     var showModelSelector by remember { mutableStateOf(false) }
     var showQuickActions by remember { mutableStateOf(true) }
+    
+    // Start model loading when chat screen opens (only once)
+    LaunchedEffect(Unit) {
+        viewModel.startModelLoading()
+    }
 
     // Animated grid pattern for travel map theme
     val infiniteTransition = rememberInfiniteTransition(label = "mapGrid")
@@ -839,52 +850,356 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
 
 @Composable
 fun TravelMessageBubble(message: ChatMessage) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start
-    ) {
-        Surface(
-            modifier = Modifier.widthIn(max = 300.dp),
-            shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 16.dp,
-                bottomStart = if (message.isUser) 16.dp else 4.dp,
-                bottomEnd = if (message.isUser) 4.dp else 16.dp
-            ),
-            color = if (message.isUser)
-                Color(0xFF3B82F6) // Blue
-            else
-                Color.White,
-            shadowElevation = 2.dp
+    if (message.isPlan && message.planData != null) {
+        // Display plan card with unique UI
+        TravelPlanCard(planData = message.planData)
+    } else {
+        // Regular message bubble
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
+            Surface(
+                modifier = Modifier.widthIn(max = 300.dp),
+                shape = RoundedCornerShape(
+                    topStart = 16.dp,
+                    topEnd = 16.dp,
+                    bottomStart = if (message.isUser) 16.dp else 4.dp,
+                    bottomEnd = if (message.isUser) 4.dp else 16.dp
+                ),
+                color = if (message.isUser)
+                    Color(0xFF3B82F6) // Blue
+                else
+                    Color.White,
+                shadowElevation = 2.dp
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = if (message.isUser) "👤" else "🗺️",
+                            fontSize = 16.sp
+                        )
+                        Text(
+                            text = if (message.isUser) "You" else "AI Guide",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (message.isUser)
+                                Color.White.copy(alpha = 0.9f)
+                            else
+                                Color(0xFF0EA5E9), // Sky blue
+                            fontSize = 11.sp
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
                     Text(
-                        text = if (message.isUser) "👤" else "🗺️",
-                        fontSize = 16.sp
-                    )
-                    Text(
-                        text = if (message.isUser) "You" else "AI Guide",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (message.isUser)
-                            Color.White.copy(alpha = 0.9f)
-                        else
-                            Color(0xFF0EA5E9), // Sky blue
-                        fontSize = 11.sp
+                        text = message.text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (message.isUser) Color.White else Color(0xFF1F2937),
+                        lineHeight = 20.sp,
+                        fontSize = 14.sp
                     )
                 }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = message.text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (message.isUser) Color.White else Color(0xFF1F2937),
-                    lineHeight = 20.sp,
-                    fontSize = 14.sp
+            }
+        }
+    }
+}
+
+@Composable
+fun TravelPlanCard(planData: com.runanywhere.startup_hackathon20.PlanDisplayData) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 8.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF0EA5E9),
+                            Color(0xFF3B82F6),
+                            Color.White
+                        ),
+                        startY = 0f,
+                        endY = 400f
+                    )
                 )
+        ) {
+            // Header Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "✈️",
+                        fontSize = 32.sp
+                    )
+                    Text(
+                        "Your Travel Plan",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // Trip Route
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            "FROM",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 10.sp
+                        )
+                        Text(
+                            planData.from,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    Text(
+                        "→",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            "TO",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 10.sp
+                        )
+                        Text(
+                            planData.to,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+
+            // Details Grid
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Date Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFDCFCE7)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "📅",
+                                fontSize = 24.sp
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                planData.startDate,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF065F46),
+                                textAlign = TextAlign.Center,
+                                fontSize = 11.sp
+                            )
+                            Text(
+                                "Start Date",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF065F46).copy(alpha = 0.7f),
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
+
+                    // Nights Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFDBEAFE)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "🌙",
+                                fontSize = 24.sp
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "${planData.nights}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E40AF)
+                            )
+                            Text(
+                                "Nights",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF1E40AF).copy(alpha = 0.7f),
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // People Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFFEF3C7)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "👥",
+                                fontSize = 24.sp
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "${planData.people}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF92400E)
+                            )
+                            Text(
+                                "Travelers",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF92400E).copy(alpha = 0.7f),
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
+
+                    // Budget Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFE0E7FF)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "💰",
+                                fontSize = 24.sp
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "₹${planData.budget}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF3730A3),
+                                fontSize = 11.sp
+                            )
+                            Text(
+                                "Budget",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF3730A3).copy(alpha = 0.7f),
+                                fontSize = 9.sp
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Divider(color = Color(0xFFE5E7EB))
+
+                Spacer(Modifier.height(16.dp))
+
+                // AI Generated Itinerary
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "🗺️",
+                        fontSize = 20.sp
+                    )
+                    Text(
+                        "AI-Generated Itinerary",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F2937)
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // Scrollable itinerary content
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp)
+                        .verticalScroll(rememberScrollState())
+                        .background(
+                            Color(0xFFF9FAFB),
+                            RoundedCornerShape(12.dp)
+                        )
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        planData.itinerary.ifEmpty { "Generating your personalized itinerary..." },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF374151),
+                        lineHeight = 22.sp,
+                        fontSize = 13.sp
+                    )
+                }
             }
         }
     }

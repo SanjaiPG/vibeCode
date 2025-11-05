@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class AppRoute(val route: String) {
     data object Home: AppRoute("home")
+    data object Map : AppRoute("map")
+    data object Profile : AppRoute("profile")
     data object LikedPlans: AppRoute("liked_plans")
     data object LikedDestinations: AppRoute("liked_destinations")
     data object Chat: AppRoute("chat")

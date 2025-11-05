@@ -25,9 +25,19 @@ import com.runanywhere.startup_hackathon20.data.model.PlanForm
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MakePlanScreen(onPlanCreated: (String) -> Unit, vm: ChatViewModel = viewModel()) {
+fun MakePlanScreen(
+    destinationId: String? = null,
+    onPlanCreated: (String) -> Unit,
+    onNavigateToChat: () -> Unit = {},
+    vm: ChatViewModel = viewModel()
+) {
+    val repo = remember { com.runanywhere.startup_hackathon20.data.DI.repo }
+    val destination = remember(destinationId) {
+        destinationId?.let { repo.getDestination(it) }
+    }
+
     var from by remember { mutableStateOf("") }
-    var to by remember { mutableStateOf("Paris") }
+    var to by remember(destination) { mutableStateOf(destination?.name ?: "Paris") }
     var startDate by remember { mutableStateOf("") }
     var nights by remember { mutableStateOf("3") }
     var budget by remember { mutableStateOf("50000") }
@@ -315,7 +325,10 @@ fun MakePlanScreen(onPlanCreated: (String) -> Unit, vm: ChatViewModel = viewMode
             Button(
                 onClick = {
                     val form = PlanForm(from, to, startDate, nights.toIntOrNull() ?: 3, budget.toIntOrNull() ?: 50000, people.toIntOrNull() ?: 2)
-                    vm.generatePlanFromForm(form) { id -> onPlanCreated(id) }
+                    vm.generatePlanFromForm(form) { id ->
+                        onPlanCreated(id)
+                        onNavigateToChat()
+                    }
                 },
                 enabled = !isLoading && modelLoaded != null && from.isNotBlank() && to.isNotBlank() && transportMode.isNotBlank(),
                 modifier = Modifier
