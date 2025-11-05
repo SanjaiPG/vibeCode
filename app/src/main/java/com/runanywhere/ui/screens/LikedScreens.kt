@@ -30,7 +30,7 @@ fun LikedPlansScreen(onOpenPlan: (String) -> Unit) {
         ) {
             Column(Modifier.padding(24.dp)) {
                 Text(
-                    "Saved Plans",
+                    "My Cart",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -151,7 +151,7 @@ fun LikedDestinationsScreen(onOpenDestination: (String) -> Unit) {
         ) {
             Column(Modifier.padding(24.dp)) {
                 Text(
-                    "Saved Places",
+                    "Wishlist",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer

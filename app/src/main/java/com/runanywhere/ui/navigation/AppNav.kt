@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -26,7 +27,7 @@ data class BottomItem(val route: String, val label: String, val icon: ImageVecto
 
 val bottomItems = listOf(
     BottomItem(AppRoute.Home.route, "Home", Icons.Filled.Home),
-    BottomItem(AppRoute.LikedPlans.route, "Plans", Icons.Filled.List),
-    BottomItem(AppRoute.LikedDestinations.route, "Places", Icons.Filled.LocationOn),
-    BottomItem(AppRoute.Chat.route, "AI Chat", Icons.Filled.Info),
+    BottomItem(AppRoute.LikedDestinations.route, "Wishlist", Icons.Filled.Favorite),
+    BottomItem(AppRoute.LikedPlans.route, "Cart", Icons.Filled.ShoppingCart),
+    BottomItem(AppRoute.Chat.route, "Chatbot", Icons.Filled.Info),
 )

@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +24,7 @@ import com.runanywhere.startup_hackathon20.data.DI
 fun PlanResultScreen(planId: String) {
     val plan = remember { DI.repo.getPlan(planId) }
     val scrollState = rememberScrollState()
+    var showExportDialog by remember { mutableStateOf(false) }
 
     if (plan == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -43,6 +46,52 @@ fun PlanResultScreen(planId: String) {
         return
     }
 
+    // Export Dialog
+    if (showExportDialog) {
+        AlertDialog(
+            onDismissRequest = { showExportDialog = false },
+            icon = {
+                Text("📥", style = MaterialTheme.typography.displaySmall)
+            },
+            title = {
+                Text("Export Your Plan")
+            },
+            text = {
+                Column {
+                    Text("Choose export format:", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            // TODO: Export as PDF logic
+                            showExportDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("📄 Export as PDF")
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            // TODO: Export as TXT logic
+                            showExportDialog = false
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("📝 Export as Text File")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showExportDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -60,7 +109,7 @@ fun PlanResultScreen(planId: String) {
                 Icon(
                     Icons.Filled.CheckCircle,
                     contentDescription = null,
-                    modifier = Modifier.size(64.dp),
+                    modifier = Modifier.size(72.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.height(16.dp))
@@ -93,7 +142,7 @@ fun PlanResultScreen(planId: String) {
             ) {
                 Column(Modifier.padding(20.dp)) {
                     Text(
-                        "Itinerary Details",
+                        "Your Travel Plan",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 16.dp)
@@ -120,7 +169,32 @@ fun PlanResultScreen(planId: String) {
 
             Spacer(Modifier.height(24.dp))
 
-            // Action Buttons
+            // Export Button - Prominent
+            Button(
+                onClick = { showExportDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text(
+                    "📥",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    "Export Plan",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Action Buttons Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -132,20 +206,32 @@ fun PlanResultScreen(planId: String) {
                         .height(48.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
+                    Icon(
+                        Icons.Filled.Share,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
                     Text("Share", fontWeight = FontWeight.Medium)
                 }
 
-                Button(
-                    onClick = { /* Save action */ },
+                OutlinedButton(
+                    onClick = {
+                        // Save to wishlist/cart
+                        DI.repo.likePlan(planId)
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Save Plan", fontWeight = FontWeight.Medium)
+                    Icon(
+                        Icons.Filled.Favorite,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Save", fontWeight = FontWeight.Medium)
                 }
             }
 

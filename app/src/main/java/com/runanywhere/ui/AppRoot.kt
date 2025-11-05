@@ -11,9 +11,19 @@ import com.runanywhere.startup_hackathon20.ui.screens.*
 @Suppress("unused")
 @Composable
 fun AppRoot() {
-    // Simple state-based navigator (avoids androidx.navigation dependency in static checks)
+    // Track login state
+    var isLoggedIn by remember { mutableStateOf(false) }
+
+    // Simple state-based navigator
     var currentRoute by remember { mutableStateOf(AppRoute.Home.route) }
 
+    // If not logged in, show login screen
+    if (!isLoggedIn) {
+        LoginScreen(onLoginSuccess = { isLoggedIn = true })
+        return
+    }
+
+    // Main app with bottom navigation (shown only after login)
     Scaffold(
         bottomBar = {
             NavigationBar {
@@ -30,7 +40,9 @@ fun AppRoot() {
         }
     ) { padding ->
         // Apply Scaffold padding so the content isn't obscured by bars
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        Box(modifier = Modifier
+            .padding(padding)
+            .fillMaxSize()) {
             when {
                 currentRoute == AppRoute.Home.route -> {
                     HomeScreen(onOpenDestination = { id ->
