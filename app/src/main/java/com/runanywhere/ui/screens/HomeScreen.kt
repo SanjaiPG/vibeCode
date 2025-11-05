@@ -85,11 +85,12 @@ fun HomeScreen(
         position = CameraPosition.fromLatLngZoom(initialPosition, 2f)
     }
 
-    Column(Modifier
-        .fillMaxSize()
-        .background(Color(0xFFF0F9FF))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF0F9FF))
     ) {
-        // User Profile Section at Top with blue gradient
+        // User Profile Section at Top with blue gradient - FIXED
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surface
@@ -136,7 +137,7 @@ fun HomeScreen(
                                 )
                             }
                         }
-                        
+
                         Column {
                             Text(
                                 "Hello, $userName! ",
@@ -155,7 +156,7 @@ fun HomeScreen(
             }
         }
 
-        // Search Bar - removed map icon from here
+        // Search Bar - FIXED
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surface
@@ -213,388 +214,390 @@ fun HomeScreen(
             }
         }
 
-        // Quick Stats Cards - Blue Theme with more cards
+        // SCROLLABLE CONTENT - Everything below the search bar
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            // Quick Stats Cards - Blue Theme with more cards
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Destinations Count Card
-                Card(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFDCFCE7)
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    // Destinations Count Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFDCFCE7)
+                        )
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(
-                                    Color(0xFF10B981).copy(alpha = 0.2f),
-                                    CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(
-                                Icons.Filled.Place,
-                                contentDescription = null,
-                                tint = Color(0xFF059669),
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                        Column {
-                            Text(
-                                "${filtered.size}",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF065F46)
-                            )
-                            Text(
-                                "Places",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF065F46).copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-
-                // Wishlist Count Card
-                Card(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFDBEAFE)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(
-                                    Color(0xFF3B82F6).copy(alpha = 0.2f),
-                                    CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Filled.Favorite,
-                                contentDescription = null,
-                                tint = Color(0xFF2563EB),
-                                modifier = Modifier.size(28.dp)
-                            )
-                        }
-                        Column {
-                            Text(
-                                "${likedDestinations.size}",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1E40AF)
-                            )
-                            Text(
-                                "Saved",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF1E40AF).copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Additional Cards Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Countries Card
-                Card(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFFEF3C7)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(
-                                    Color(0xFFF59E0B).copy(alpha = 0.2f),
-                                    CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "🌍",
-                                fontSize = 24.sp
-                            )
-                        }
-                        Column {
-                            Text(
-                                "${all.map { it.country }.distinct().size}",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF92400E)
-                            )
-                            Text(
-                                "Countries",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF92400E).copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-
-                // Plans Card
-                Card(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xFFE0E7FF)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(
-                                    Color(0xFF6366F1).copy(alpha = 0.2f),
-                                    CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                "✈️",
-                                fontSize = 24.sp
-                            )
-                        }
-                        Column {
-                            Text(
-                                "$allPlansCount",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF3730A3)
-                            )
-                            Text(
-                                "Plans",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF3730A3).copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Map View Section (Always visible, inline)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .then(
-                    if (mapViewState == "expanded")
-                        Modifier.weight(1f)
-                    else
-                        Modifier.height(300.dp)
-                ),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 4.dp
-            )
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                GoogleMap(
-                    modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraPositionState,
-                    uiSettings = MapUiSettings(
-                        myLocationButtonEnabled = false,
-                        zoomControlsEnabled = false,
-                        mapToolbarEnabled = false,
-                        compassEnabled = true,
-                        rotationGesturesEnabled = true,
-                        scrollGesturesEnabled = true,
-                        tiltGesturesEnabled = false,
-                        zoomGesturesEnabled = true
-                    ),
-                    properties = MapProperties(
-                        isMyLocationEnabled = false,
-                        mapType = MapType.NORMAL
-                    )
-                ) {
-                    // Add markers for filtered destinations
-                    filtered.forEach { destination ->
-                        Marker(
-                            state = MarkerState(
-                                position = LatLng(destination.lat, destination.lng)
-                            ),
-                            title = destination.name,
-                            snippet = "${destination.country} - ${destination.rating}⭐",
-                            onClick = {
-                                selectedDestinationOnMap = destination
-                                false
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(
+                                        Color(0xFF10B981).copy(alpha = 0.2f),
+                                        CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.Place,
+                                    contentDescription = null,
+                                    tint = Color(0xFF059669),
+                                    modifier = Modifier.size(28.dp)
+                                )
                             }
+                            Column {
+                                Text(
+                                    "${filtered.size}",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF065F46)
+                                )
+                                Text(
+                                    "Places",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF065F46).copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+                    }
+
+                    // Wishlist Count Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFDBEAFE)
                         )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(
+                                        Color(0xFF3B82F6).copy(alpha = 0.2f),
+                                        CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Filled.Favorite,
+                                    contentDescription = null,
+                                    tint = Color(0xFF2563EB),
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    "${likedDestinations.size}",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1E40AF)
+                                )
+                                Text(
+                                    "Saved",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF1E40AF).copy(alpha = 0.8f)
+                                )
+                            }
+                        }
                     }
                 }
 
-                // Map controls overlay - only expand/collapse button
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                // Additional Cards Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Expand/Collapse button
-                    FloatingActionButton(
-                        onClick = {
-                            mapViewState = if (mapViewState == "compact") "expanded" else "compact"
-                        },
-                        containerColor = Color.White,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            if (mapViewState == "compact") Icons.Filled.Star else Icons.Filled.Close,
-                            contentDescription = if (mapViewState == "compact") "Expand Map" else "Collapse Map",
-                            tint = Color(0xFF0EA5E9),
-                            modifier = Modifier.size(20.dp)
+                    // Countries Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFFEF3C7)
                         )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(
+                                        Color(0xFFF59E0B).copy(alpha = 0.2f),
+                                        CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "🌍",
+                                    fontSize = 24.sp
+                                )
+                            }
+                            Column {
+                                Text(
+                                    "${all.map { it.country }.distinct().size}",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF92400E)
+                                )
+                                Text(
+                                    "Countries",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF92400E).copy(alpha = 0.8f)
+                                )
+                            }
+                        }
                     }
-                }
 
-                // Zoom controls
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FloatingActionButton(
-                        onClick = {
-                            val currentZoom = cameraPositionState.position.zoom
-                            cameraPositionState.move(
-                                CameraUpdateFactory.zoomTo((currentZoom + 1f).coerceAtMost(20f))
-                            )
-                        },
-                        containerColor = Color.White,
-                        modifier = Modifier.size(40.dp)
+                    // Plans Card
+                    Card(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFE0E7FF)
+                        )
                     ) {
-                        Text(
-                            "+",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0EA5E9)
-                        )
-                    }
-                    FloatingActionButton(
-                        onClick = {
-                            val currentZoom = cameraPositionState.position.zoom
-                            cameraPositionState.move(
-                                CameraUpdateFactory.zoomTo((currentZoom - 1f).coerceAtLeast(2f))
-                            )
-                        },
-                        containerColor = Color.White,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Text(
-                            "−",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0EA5E9)
-                        )
-                    }
-                }
-
-                // Map label
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(12.dp),
-                    color = Color.White.copy(alpha = 0.9f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            Icons.Filled.LocationOn,
-                            contentDescription = null,
-                            tint = Color(0xFF0EA5E9),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            "${filtered.size} destinations",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1F2937)
-                        )
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(
+                                        Color(0xFF6366F1).copy(alpha = 0.2f),
+                                        CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "✈️",
+                                    fontSize = 24.sp
+                                )
+                            }
+                            Column {
+                                Text(
+                                    "$allPlansCount",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF3730A3)
+                                )
+                                Text(
+                                    "Plans",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF3730A3).copy(alpha = 0.8f)
+                                )
+                            }
+                        }
                     }
                 }
             }
-        }
 
-        Spacer(Modifier.height(8.dp))
+            // Map View Section (Always visible, inline, NOT expanded style)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(300.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 4.dp
+                )
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    GoogleMap(
+                        modifier = Modifier.fillMaxSize(),
+                        cameraPositionState = cameraPositionState,
+                        uiSettings = MapUiSettings(
+                            myLocationButtonEnabled = false,
+                            zoomControlsEnabled = false,
+                            mapToolbarEnabled = false,
+                            compassEnabled = true,
+                            rotationGesturesEnabled = true,
+                            scrollGesturesEnabled = true,
+                            tiltGesturesEnabled = false,
+                            zoomGesturesEnabled = true
+                        ),
+                        properties = MapProperties(
+                            isMyLocationEnabled = false,
+                            mapType = MapType.NORMAL
+                        )
+                    ) {
+                        // Add markers for filtered destinations
+                        filtered.forEach { destination ->
+                            Marker(
+                                state = MarkerState(
+                                    position = LatLng(destination.lat, destination.lng)
+                                ),
+                                title = destination.name,
+                                snippet = "${destination.country} - ${destination.rating}⭐",
+                                onClick = {
+                                    selectedDestinationOnMap = destination
+                                    false
+                                }
+                            )
+                        }
+                    }
 
-        // Famous Destinations Section Header - removed toggle button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+                    // Map controls overlay - only expand/collapse button
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Expand/Collapse button (can keep functionality but map never 'expands' visually in this design)
+                        FloatingActionButton(
+                            onClick = {
+                                mapViewState =
+                                    if (mapViewState == "compact") "expanded" else "compact"
+                            },
+                            containerColor = Color.White,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                if (mapViewState == "compact") Icons.Filled.Star else Icons.Filled.Close,
+                                contentDescription = if (mapViewState == "compact") "Expand Map" else "Collapse Map",
+                                tint = Color(0xFF0EA5E9),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    // Zoom controls
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FloatingActionButton(
+                            onClick = {
+                                val currentZoom = cameraPositionState.position.zoom
+                                cameraPositionState.move(
+                                    CameraUpdateFactory.zoomTo((currentZoom + 1f).coerceAtMost(20f))
+                                )
+                            },
+                            containerColor = Color.White,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Text(
+                                "+",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0EA5E9)
+                            )
+                        }
+                        FloatingActionButton(
+                            onClick = {
+                                val currentZoom = cameraPositionState.position.zoom
+                                cameraPositionState.move(
+                                    CameraUpdateFactory.zoomTo((currentZoom - 1f).coerceAtLeast(2f))
+                                )
+                            },
+                            containerColor = Color.White,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Text(
+                                "−",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0EA5E9)
+                            )
+                        }
+                    }
+
+                    // Map label
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(12.dp),
+                        color = Color.White.copy(alpha = 0.9f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.LocationOn,
+                                contentDescription = null,
+                                tint = Color(0xFF0EA5E9),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                "${filtered.size} destinations",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1F2937)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Famous Destinations Section Header - removed toggle button
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Filled.LocationOn,
-                    contentDescription = null,
-                    tint = Color(0xFF0EA5E9),
-                    modifier = Modifier.size(28.dp)
-                )
-                Text(
-                    "Famous Destinations",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        tint = Color(0xFF0EA5E9),
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text(
+                        "Famous Destinations",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
-        }
 
-        // Destination Cards with Blue Gradient - only show when map is not expanded
-        if (mapViewState != "expanded") {
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.weight(1f)
+            // Destination Cards with Blue Gradient
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(filtered) { d ->
+                filtered.forEach { d ->
                     Card(
                         onClick = { onOpenDestination(d.id) },
                         modifier = Modifier.fillMaxWidth(),
@@ -691,7 +694,7 @@ fun HomeScreen(
                                     }
                                 }
                             }
-                            
+
                             // Wishlist Button in Top Right Corner
                             Box(
                                 modifier = Modifier
@@ -715,9 +718,9 @@ fun HomeScreen(
                                         )
                                 ) {
                                     Icon(
-                                        if (likedDestinations.contains(d.id)) 
-                                            Icons.Filled.Favorite 
-                                        else 
+                                        if (likedDestinations.contains(d.id))
+                                            Icons.Filled.Favorite
+                                        else
                                             Icons.Filled.FavoriteBorder,
                                         contentDescription = "Add to Wishlist",
                                         tint = if (likedDestinations.contains(d.id))
@@ -732,6 +735,8 @@ fun HomeScreen(
                     }
                 }
             }
+
+            Spacer(Modifier.height(16.dp))
         }
     }
 
