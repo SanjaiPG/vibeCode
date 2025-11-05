@@ -70,6 +70,21 @@ fun HomeScreen(
         repo.getAllPlans().size
     }
 
+    // Map view state - can be: "compact" (default), "expanded"
+    var mapViewState by remember { mutableStateOf("compact") }
+    var selectedDestinationOnMap by remember { mutableStateOf<com.runanywhere.startup_hackathon20.data.model.Destination?>(null) }
+
+    // Center camera on first destination or world center
+    val initialPosition = if (filtered.isNotEmpty()) {
+        LatLng(20.0, 0.0)
+    } else {
+        LatLng(0.0, 0.0)
+    }
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(initialPosition, 2f)
+    }
+
     Column(Modifier
         .fillMaxSize()
         .background(Color(0xFFF0F9FF))
@@ -140,7 +155,7 @@ fun HomeScreen(
             }
         }
 
-        // Search Bar with Map Icon - Profile, Search, Map at top
+        // Search Bar - removed map icon from here
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surface
@@ -194,21 +209,6 @@ fun HomeScreen(
                         shape = RoundedCornerShape(20.dp),
                         singleLine = true
                     )
-
-                    // Map Button
-                    IconButton(
-                        onClick = onOpenMap,
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(Color.White, CircleShape)
-                    ) {
-                        Icon(
-                            Icons.Filled.LocationOn,
-                            contentDescription = "Map View",
-                            tint = Color(0xFF0EA5E9),
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
                 }
             }
         }
@@ -408,7 +408,160 @@ fun HomeScreen(
             }
         }
 
-        // Famous Destinations Section Header
+        // Map View Section (Always visible, inline)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .then(
+                    if (mapViewState == "expanded")
+                        Modifier.weight(1f)
+                    else
+                        Modifier.height(300.dp)
+                ),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 4.dp
+            )
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState,
+                    uiSettings = MapUiSettings(
+                        myLocationButtonEnabled = false,
+                        zoomControlsEnabled = false,
+                        mapToolbarEnabled = false,
+                        compassEnabled = true,
+                        rotationGesturesEnabled = true,
+                        scrollGesturesEnabled = true,
+                        tiltGesturesEnabled = false,
+                        zoomGesturesEnabled = true
+                    ),
+                    properties = MapProperties(
+                        isMyLocationEnabled = false,
+                        mapType = MapType.NORMAL
+                    )
+                ) {
+                    // Add markers for filtered destinations
+                    filtered.forEach { destination ->
+                        Marker(
+                            state = MarkerState(
+                                position = LatLng(destination.lat, destination.lng)
+                            ),
+                            title = destination.name,
+                            snippet = "${destination.country} - ${destination.rating}⭐",
+                            onClick = {
+                                selectedDestinationOnMap = destination
+                                false
+                            }
+                        )
+                    }
+                }
+
+                // Map controls overlay - only expand/collapse button
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Expand/Collapse button
+                    FloatingActionButton(
+                        onClick = {
+                            mapViewState = if (mapViewState == "compact") "expanded" else "compact"
+                        },
+                        containerColor = Color.White,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            if (mapViewState == "compact") Icons.Filled.Star else Icons.Filled.Close,
+                            contentDescription = if (mapViewState == "compact") "Expand Map" else "Collapse Map",
+                            tint = Color(0xFF0EA5E9),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                // Zoom controls
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FloatingActionButton(
+                        onClick = {
+                            val currentZoom = cameraPositionState.position.zoom
+                            cameraPositionState.move(
+                                CameraUpdateFactory.zoomTo((currentZoom + 1f).coerceAtMost(20f))
+                            )
+                        },
+                        containerColor = Color.White,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Text(
+                            "+",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0EA5E9)
+                        )
+                    }
+                    FloatingActionButton(
+                        onClick = {
+                            val currentZoom = cameraPositionState.position.zoom
+                            cameraPositionState.move(
+                                CameraUpdateFactory.zoomTo((currentZoom - 1f).coerceAtLeast(2f))
+                            )
+                        },
+                        containerColor = Color.White,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Text(
+                            "−",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0EA5E9)
+                        )
+                    }
+                }
+
+                // Map label
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp),
+                    color = Color.White.copy(alpha = 0.9f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.LocationOn,
+                            contentDescription = null,
+                            tint = Color(0xFF0EA5E9),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            "${filtered.size} destinations",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F2937)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Famous Destinations Section Header - removed toggle button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -434,150 +587,172 @@ fun HomeScreen(
             }
         }
 
-        // Destination Cards with Blue Gradient
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            items(filtered) { d ->
-                Card(
-                    onClick = { onOpenDestination(d.id) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    ),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 4.dp,
-                        pressedElevation = 8.dp
-                    )
-                ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Image placeholder with blue gradient
-                            Box(
-                                modifier = Modifier
-                                    .size(100.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(
-                                        Brush.linearGradient(
-                                            colors = listOf(
-                                                Color(0xFF0EA5E9),
-                                                Color(0xFF3B82F6),
-                                                Color(0xFF2563EB)
-                                            )
-                                        )
-                                    ),
-                                contentAlignment = Alignment.Center
+        // Destination Cards with Blue Gradient - only show when map is not expanded
+        if (mapViewState != "expanded") {
+            LazyColumn(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                items(filtered) { d ->
+                    Card(
+                        onClick = { onOpenDestination(d.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.White
+                        ),
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 4.dp,
+                            pressedElevation = 8.dp
+                        )
+                    ) {
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
+                                // Image placeholder with blue gradient
+                                Box(
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(
+                                            Brush.linearGradient(
+                                                colors = listOf(
+                                                    Color(0xFF0EA5E9),
+                                                    Color(0xFF3B82F6),
+                                                    Color(0xFF2563EB)
+                                                )
+                                            )
+                                        ),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        d.name.take(2).uppercase(),
-                                        style = MaterialTheme.typography.headlineLarge,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-
-                            Spacer(Modifier.width(16.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    d.name,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1F2937)
-                                )
-                                Spacer(Modifier.height(6.dp))
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Place,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                        tint = Color(0xFF6B7280)
-                                    )
-                                    Text(
-                                        d.country,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = Color(0xFF6B7280)
-                                    )
-                                }
-                                Spacer(Modifier.height(8.dp))
-                                Surface(
-                                    color = Color(0xFFDBEAFE),
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
                                     ) {
                                         Text(
-                                            "",
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-                                        Text(
-                                            d.currencyCode,
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = Color(0xFF1E40AF),
+                                            d.name.take(2).uppercase(),
+                                            style = MaterialTheme.typography.headlineLarge,
+                                            color = Color.White,
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
                                 }
-                            }
-                        }
-                        
-                        // Wishlist Button in Top Right Corner
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            contentAlignment = Alignment.TopEnd
-                        ) {
-                            IconButton(
-                                onClick = {
-                                    if (likedDestinations.contains(d.id)) {
-                                        repo.unlikeDestination(d.id)
-                                    } else {
-                                        repo.likeDestination(d.id)
-                                    }
-                                },
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        Color.White.copy(alpha = 0.95f),
-                                        CircleShape
+
+                                Spacer(Modifier.width(16.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        d.name,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1F2937)
                                     )
+                                    Spacer(Modifier.height(6.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Place,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = Color(0xFF6B7280)
+                                        )
+                                        Text(
+                                            d.country,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = Color(0xFF6B7280)
+                                        )
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    Surface(
+                                        color = Color(0xFFDBEAFE),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                "",
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                            Text(
+                                                d.currencyCode,
+                                                style = MaterialTheme.typography.labelLarge,
+                                                color = Color(0xFF1E40AF),
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Wishlist Button in Top Right Corner
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                contentAlignment = Alignment.TopEnd
                             ) {
-                                Icon(
-                                    if (likedDestinations.contains(d.id)) 
-                                        Icons.Filled.Favorite 
-                                    else 
-                                        Icons.Filled.FavoriteBorder,
-                                    contentDescription = "Add to Wishlist",
-                                    tint = if (likedDestinations.contains(d.id))
-                                        Color(0xFF3B82F6)
-                                    else
-                                        Color(0xFF9CA3AF),
-                                    modifier = Modifier.size(24.dp)
-                                )
+                                IconButton(
+                                    onClick = {
+                                        if (likedDestinations.contains(d.id)) {
+                                            repo.unlikeDestination(d.id)
+                                        } else {
+                                            repo.likeDestination(d.id)
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            Color.White.copy(alpha = 0.95f),
+                                            CircleShape
+                                        )
+                                ) {
+                                    Icon(
+                                        if (likedDestinations.contains(d.id)) 
+                                            Icons.Filled.Favorite 
+                                        else 
+                                            Icons.Filled.FavoriteBorder,
+                                        contentDescription = "Add to Wishlist",
+                                        tint = if (likedDestinations.contains(d.id))
+                                            Color(0xFF3B82F6)
+                                        else
+                                            Color(0xFF9CA3AF),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Destination Details Dialog from map marker click
+    if (selectedDestinationOnMap != null) {
+        DestinationDetailsDialog(
+            destination = selectedDestinationOnMap!!,
+            isLiked = likedDestinations.contains(selectedDestinationOnMap!!.id),
+            onDismiss = { selectedDestinationOnMap = null },
+            onToggleLike = { id ->
+                if (likedDestinations.contains(id)) {
+                    repo.unlikeDestination(id)
+                } else {
+                    repo.likeDestination(id)
+                }
+            },
+            onMakePlan = {
+                selectedDestinationOnMap = null
+                onOpenDestination(it)
+            }
+        )
     }
 }
 
