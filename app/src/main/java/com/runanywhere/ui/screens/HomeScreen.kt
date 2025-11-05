@@ -85,6 +85,175 @@ fun HomeScreen(
         position = CameraPosition.fromLatLngZoom(initialPosition, 2f)
     }
 
+    // Show full screen map when expanded
+    if (mapViewState == "expanded") {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF0C4A6E))
+        ) {
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                uiSettings = MapUiSettings(
+                    myLocationButtonEnabled = false,
+                    zoomControlsEnabled = false,
+                    mapToolbarEnabled = false,
+                    compassEnabled = true,
+                    rotationGesturesEnabled = true,
+                    scrollGesturesEnabled = true,
+                    tiltGesturesEnabled = false,
+                    zoomGesturesEnabled = true
+                ),
+                properties = MapProperties(
+                    isMyLocationEnabled = false,
+                    mapType = MapType.NORMAL
+                )
+            ) {
+                // Add markers for filtered destinations
+                filtered.forEach { destination ->
+                    Marker(
+                        state = MarkerState(
+                            position = LatLng(destination.lat, destination.lng)
+                        ),
+                        title = destination.name,
+                        snippet = "${destination.country} - ${destination.rating}⭐",
+                        onClick = {
+                            selectedDestinationOnMap = destination
+                            false
+                        }
+                    )
+                }
+            }
+
+            // Close button
+            IconButton(
+                onClick = { mapViewState = "compact" },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+                    .size(48.dp)
+                    .background(Color.White.copy(alpha = 0.95f), CircleShape)
+            ) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "Collapse Map",
+                    tint = Color(0xFF0EA5E9),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            // Map label
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(16.dp),
+                color = Color.White.copy(alpha = 0.95f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        tint = Color(0xFF0EA5E9),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        "${filtered.size} destinations",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F2937)
+                    )
+                }
+            }
+
+            // Zoom controls
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FloatingActionButton(
+                    onClick = {
+                        val currentZoom = cameraPositionState.position.zoom
+                        cameraPositionState.move(
+                            CameraUpdateFactory.zoomTo((currentZoom + 1f).coerceAtMost(20f))
+                        )
+                    },
+                    containerColor = Color.White,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Text(
+                        "+",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0EA5E9)
+                    )
+                }
+                FloatingActionButton(
+                    onClick = {
+                        val currentZoom = cameraPositionState.position.zoom
+                        cameraPositionState.move(
+                            CameraUpdateFactory.zoomTo((currentZoom - 1f).coerceAtLeast(2f))
+                        )
+                    },
+                    containerColor = Color.White,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Text(
+                        "−",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0EA5E9)
+                    )
+                }
+                FloatingActionButton(
+                    onClick = {
+                        cameraPositionState.move(
+                            CameraUpdateFactory.newLatLngZoom(initialPosition, 2f)
+                        )
+                    },
+                    containerColor = Color.White,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.LocationOn,
+                        contentDescription = "Reset",
+                        tint = Color(0xFF0EA5E9)
+                    )
+                }
+            }
+        }
+
+        // Destination Details Dialog from map marker click (show over expanded map)
+        if (selectedDestinationOnMap != null) {
+            DestinationDetailsDialog(
+                destination = selectedDestinationOnMap!!,
+                isLiked = likedDestinations.contains(selectedDestinationOnMap!!.id),
+                onDismiss = { selectedDestinationOnMap = null },
+                onToggleLike = { id ->
+                    if (likedDestinations.contains(id)) {
+                        repo.unlikeDestination(id)
+                    } else {
+                        repo.likeDestination(id)
+                    }
+                },
+                onMakePlan = {
+                    selectedDestinationOnMap = null
+                    onOpenDestination(it)
+                }
+            )
+        }
+
+        return
+    }
+
+    // Normal view when map is not expanded
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -464,14 +633,14 @@ fun HomeScreen(
                         }
                     }
 
-                    // Map controls overlay - only expand/collapse button
+                    // Map controls overlay - expand/collapse button
                     Column(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Expand/Collapse button (can keep functionality but map never 'expands' visually in this design)
+                        // Expand/Collapse button for fullscreen map
                         FloatingActionButton(
                             onClick = {
                                 mapViewState =
@@ -480,11 +649,10 @@ fun HomeScreen(
                             containerColor = Color.White,
                             modifier = Modifier.size(40.dp)
                         ) {
-                            Icon(
-                                if (mapViewState == "compact") Icons.Filled.Star else Icons.Filled.Close,
-                                contentDescription = if (mapViewState == "compact") "Expand Map" else "Collapse Map",
-                                tint = Color(0xFF0EA5E9),
-                                modifier = Modifier.size(20.dp)
+                            Text(
+                                if (mapViewState == "compact") "⛶" else "✕",
+                                fontSize = 20.sp,
+                                color = Color(0xFF0EA5E9)
                             )
                         }
                     }
