@@ -8,9 +8,11 @@ import com.runanywhere.sdk.models.ModelInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import com.runanywhere.startup_hackathon20.data.DI
 import com.runanywhere.startup_hackathon20.data.model.Plan
 import com.runanywhere.startup_hackathon20.data.model.PlanForm
+import android.util.Log
 
 // Simple Message Data Class
 data class ChatMessage(
@@ -36,21 +38,85 @@ class ChatViewModel : ViewModel() {
     private val _currentModelId = MutableStateFlow<String?>(null)
     val currentModelId: StateFlow<String?> = _currentModelId
 
-    private val _statusMessage = MutableStateFlow<String>("Initializing...")
+    private val _statusMessage = MutableStateFlow<String>("Initializing SDK...")
     val statusMessage: StateFlow<String> = _statusMessage
 
     init {
-        loadAvailableModels()
+        Log.i("ChatViewModel", "ViewModel initialized, waiting for SDK...")
+        // Wait a bit for SDK to initialize, then load models
+        viewModelScope.launch {
+            delay(2000) // Wait 2 seconds for SDK initialization
+            loadAvailableModelsWithRetry()
+        }
+    }
+
+    private fun loadAvailableModelsWithRetry() {
+        viewModelScope.launch {
+            var attempts = 0
+            val maxAttempts = 5
+
+            while (attempts < maxAttempts) {
+                attempts++
+                try {
+                    Log.i("ChatViewModel", "Attempt $attempts: Fetching available models...")
+                    _statusMessage.value = "Loading models (attempt $attempts)..."
+
+                    val models = listAvailableModels()
+
+                    if (models.isNotEmpty()) {
+                        _availableModels.value = models
+                        _statusMessage.value =
+                            "Found ${models.size} models. Tap 'Models' to download."
+                        Log.i(
+                            "ChatViewModel",
+                            "✓ Found ${models.size} models: ${models.map { it.name }}"
+                        )
+                        return@launch // Success! Exit the retry loop
+                    } else {
+                        Log.w("ChatViewModel", "No models found on attempt $attempts")
+                        if (attempts < maxAttempts) {
+                            _statusMessage.value = "Waiting for SDK... (${attempts}/${maxAttempts})"
+                            delay(2000) // Wait 2 seconds before retry
+                        } else {
+                            _statusMessage.value = "No models found. Try refreshing."
+                            Log.e("ChatViewModel", "❌ No models found after $maxAttempts attempts")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(
+                        "ChatViewModel",
+                        "❌ Error loading models (attempt $attempts): ${e.message}",
+                        e
+                    )
+                    if (attempts < maxAttempts) {
+                        _statusMessage.value = "Retrying... (${attempts}/${maxAttempts})"
+                        delay(2000)
+                    } else {
+                        _statusMessage.value = "Error: ${e.message}. Tap 'Models' to retry."
+                    }
+                }
+            }
+        }
     }
 
     private fun loadAvailableModels() {
         viewModelScope.launch {
             try {
+                Log.i("ChatViewModel", "Fetching available models...")
+                _statusMessage.value = "Loading models..."
+
                 val models = listAvailableModels()
                 _availableModels.value = models
-                _statusMessage.value = "Ready - Please download and load a model"
+
+                _statusMessage.value = if (models.isEmpty()) {
+                    "No models found. SDK may still be initializing..."
+                } else {
+                    "Found ${models.size} models. Tap 'Models' to download."
+                }
+                Log.i("ChatViewModel", "✓ Found ${models.size} models: ${models.map { it.name }}")
             } catch (e: Exception) {
-                _statusMessage.value = "Error loading models: ${e.message}"
+                _statusMessage.value = "Error: ${e.message}"
+                Log.e("ChatViewModel", "❌ Error loading models: ${e.message}", e)
             }
         }
     }
@@ -58,16 +124,28 @@ class ChatViewModel : ViewModel() {
     fun downloadModel(modelId: String) {
         viewModelScope.launch {
             try {
+                Log.i("ChatViewModel", "Starting download for model: $modelId")
                 _statusMessage.value = "Downloading model..."
+                _downloadProgress.value = 0f
+
                 RunAnywhere.downloadModel(modelId).collect { progress ->
                     _downloadProgress.value = progress
-                    _statusMessage.value = "Downloading: ${(progress * 100).toInt()}%"
+                    val percent = (progress * 100).toInt()
+                    _statusMessage.value = "Downloading: $percent%"
+                    Log.d("ChatViewModel", "Download progress: $percent%")
                 }
+
                 _downloadProgress.value = null
-                _statusMessage.value = "Download complete! Please load the model."
+                _statusMessage.value = "Download complete! Tap 'Load' to use it."
+                Log.i("ChatViewModel", "✓ Download complete for model: $modelId")
+
+                // Refresh model list to update downloaded status
+                delay(500)
+                loadAvailableModels()
             } catch (e: Exception) {
                 _statusMessage.value = "Download failed: ${e.message}"
                 _downloadProgress.value = null
+                Log.e("ChatViewModel", "❌ Download failed: ${e.message}", e)
             }
         }
     }
@@ -75,25 +153,38 @@ class ChatViewModel : ViewModel() {
     fun loadModel(modelId: String) {
         viewModelScope.launch {
             try {
-                _statusMessage.value = "Loading model..."
+                Log.i("ChatViewModel", "Attempting to load model: $modelId")
+                _statusMessage.value = "Loading model (this may take 10-30 seconds)..."
+                _isLoading.value = true
+
                 val success = RunAnywhere.loadModel(modelId)
+
                 if (success) {
                     _currentModelId.value = modelId
-                    _statusMessage.value = "Model loaded! Ready to chat."
+                    _statusMessage.value = "✓ Model ready! You can chat now."
+                    Log.i("ChatViewModel", "✓ Model loaded successfully: $modelId")
                 } else {
-                    _statusMessage.value = "Failed to load model"
+                    _statusMessage.value = "Failed to load model. Try closing other apps."
+                    Log.e("ChatViewModel", "❌ Failed to load model (returned false): $modelId")
                 }
             } catch (e: Exception) {
-                _statusMessage.value = "Error loading model: ${e.message}"
+                _statusMessage.value = "Load error: ${e.message}"
+                Log.e("ChatViewModel", "❌ Error loading model: ${e.message}", e)
+                e.printStackTrace()
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
     fun sendMessage(text: String) {
         if (_currentModelId.value == null) {
-            _statusMessage.value = "Please load a model first"
+            _statusMessage.value = "⚠️ Please load a model first!"
+            Log.w("ChatViewModel", "⚠️ Attempted to send message without loaded model")
             return
         }
+
+        Log.i("ChatViewModel", "Sending message: $text")
 
         // Add user message
         _messages.value += ChatMessage(text, isUser = true)
@@ -117,8 +208,12 @@ class ChatViewModel : ViewModel() {
                     }
                     _messages.value = currentMessages
                 }
+                _statusMessage.value = "✓ Model ready! You can chat now."
+                Log.i("ChatViewModel", "✓ Response generated successfully")
             } catch (e: Exception) {
                 _messages.value += ChatMessage("Error: ${e.message}", isUser = false)
+                _statusMessage.value = "Error generating response: ${e.message}"
+                Log.e("ChatViewModel", "❌ Error generating response: ${e.message}", e)
             }
 
             _isLoading.value = false
@@ -126,6 +221,8 @@ class ChatViewModel : ViewModel() {
     }
 
     fun refreshModels() {
+        Log.i("ChatViewModel", "Manual refresh requested...")
+        _statusMessage.value = "Refreshing models..."
         loadAvailableModels()
     }
 

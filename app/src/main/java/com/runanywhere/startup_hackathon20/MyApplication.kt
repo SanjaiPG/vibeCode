@@ -15,6 +15,8 @@ class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        Log.i("MyApp", "Application onCreate - Starting SDK initialization")
+
         // Initialize SDK asynchronously
         GlobalScope.launch(Dispatchers.IO) {
             initializeSDK()
@@ -23,6 +25,8 @@ class MyApplication : Application() {
 
     private suspend fun initializeSDK() {
         try {
+            Log.i("MyApp", "Step 1: Initializing SDK...")
+
             // Step 1: Initialize SDK
             RunAnywhere.initialize(
                 context = this@MyApplication,
@@ -30,28 +34,61 @@ class MyApplication : Application() {
                 environment = SDKEnvironment.DEVELOPMENT
             )
 
+            Log.i("MyApp", "Step 1: ✓ SDK initialized successfully")
+
+            Log.i("MyApp", "Step 2: Registering LLM Service Provider...")
+
             // Step 2: Register LLM Service Provider
             LlamaCppServiceProvider.register()
+
+            Log.i("MyApp", "Step 2: ✓ LLM Service Provider registered")
+
+            Log.i("MyApp", "Step 3: Registering models...")
 
             // Step 3: Register Models
             registerModels()
 
+            Log.i("MyApp", "Step 3: ✓ Models registered")
+
+            Log.i("MyApp", "Step 4: Scanning for downloaded models...")
+
             // Step 4: Scan for previously downloaded models
             RunAnywhere.scanForDownloadedModels()
 
-            Log.i("MyApp", "SDK initialized successfully")
+            Log.i("MyApp", "Step 4: ✓ Scan complete")
+
+            Log.i("MyApp", "✓✓✓ SDK initialization completed successfully ✓✓✓")
 
         } catch (e: Exception) {
-            Log.e("MyApp", "SDK initialization failed: ${e.message}")
+            Log.e("MyApp", "❌ SDK initialization failed: ${e.message}")
+            Log.e("MyApp", "Stack trace:", e)
+            e.printStackTrace()
         }
     }
 
     private suspend fun registerModels() {
-        // Medium-sized model - better quality (374 MB)
-        addModelFromURL(
-            url = "https://huggingface.co/Triangle104/Qwen2.5-0.5B-Instruct-Q6_K-GGUF/resolve/main/qwen2.5-0.5b-instruct-q6_k.gguf",
-            name = "Qwen 2.5 0.5B Instruct Q6_K",
-            type = "LLM"
-        )
+        try {
+            // Smaller model - faster download for testing (119 MB)
+            Log.i("MyApp", "Registering SmolLM2 360M model...")
+            addModelFromURL(
+                url = "https://huggingface.co/prithivMLmods/SmolLM2-360M-GGUF/resolve/main/SmolLM2-360M.Q8_0.gguf",
+                name = "SmolLM2 360M Q8_0",
+                type = "LLM"
+            )
+            Log.i("MyApp", "✓ SmolLM2 360M registered")
+
+            // Medium-sized model - better quality (374 MB)
+            Log.i("MyApp", "Registering Qwen 2.5 0.5B model...")
+            addModelFromURL(
+                url = "https://huggingface.co/Triangle104/Qwen2.5-0.5B-Instruct-Q6_K-GGUF/resolve/main/qwen2.5-0.5b-instruct-q6_k.gguf",
+                name = "Qwen 2.5 0.5B Instruct Q6_K",
+                type = "LLM"
+            )
+            Log.i("MyApp", "✓ Qwen 2.5 0.5B registered")
+
+        } catch (e: Exception) {
+            Log.e("MyApp", "❌ Model registration failed: ${e.message}")
+            e.printStackTrace()
+        }
     }
 }
