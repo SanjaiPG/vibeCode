@@ -218,13 +218,14 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Country Code Dropdown
+                            // Country Code Dropdown - Small compact box
                             ExposedDropdownMenuBox(
                                 expanded = expandedCountryCode,
                                 onExpandedChange = { expandedCountryCode = !expandedCountryCode },
-                                modifier = Modifier.weight(0.35f)
+                                modifier = Modifier.width(100.dp)
                             ) {
                                 OutlinedTextField(
                                     value = selectedCountryCode,
@@ -233,7 +234,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                     trailingIcon = {
                                         Icon(
                                             Icons.Filled.ArrowDropDown,
-                                            contentDescription = null
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     },
                                     modifier = Modifier.menuAnchor(),
@@ -242,6 +244,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                    ),
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 )
 
@@ -251,7 +256,12 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                 ) {
                                     countryCodes.forEach { (code, label) ->
                                         DropdownMenuItem(
-                                            text = { Text("$code $label") },
+                                            text = {
+                                                Text(
+                                                    "$code $label",
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                            },
                                             onClick = {
                                                 selectedCountryCode = code
                                                 expandedCountryCode = false
@@ -261,34 +271,158 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                 }
                             }
 
-                            // Phone Number Field
+                            // Phone Number Field - Large rectangle taking remaining space
                             OutlinedTextField(
                                 value = phone,
-                                onValueChange = { phone = it.filter { char -> char.isDigit() } },
-                                label = { Text("Phone Number") },
+                                onValueChange = { newValue ->
+                                    // Only allow digits and max 10 characters
+                                    val filtered = newValue.filter { it.isDigit() }.take(10)
+                                    phone = filtered
+                                },
+                                label = { Text("Phone Number (Optional)") },
                                 placeholder = { Text("1234567890") },
                                 leadingIcon = {
-                                    Icon(Icons.Filled.Phone, contentDescription = null)
+                                    Icon(
+                                        Icons.Filled.Phone,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                 },
-                                modifier = Modifier.weight(0.65f),
+                                trailingIcon = {
+                                    // Show character count
+                                    if (phone.isNotEmpty()) {
+                                        Surface(
+                                            color = when {
+                                                phone.length == 10 -> MaterialTheme.colorScheme.primary.copy(
+                                                    alpha = 0.1f
+                                                )
+
+                                                phone.length < 10 -> MaterialTheme.colorScheme.error.copy(
+                                                    alpha = 0.1f
+                                                )
+
+                                                else -> MaterialTheme.colorScheme.surfaceVariant
+                                            },
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(
+                                                "${phone.length}/10",
+                                                modifier = Modifier.padding(
+                                                    horizontal = 8.dp,
+                                                    vertical = 4.dp
+                                                ),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = when {
+                                                    phone.length == 10 -> MaterialTheme.colorScheme.primary
+                                                    phone.length < 10 -> MaterialTheme.colorScheme.error
+                                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                                },
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(16.dp),
                                 singleLine = true,
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                )
+                                    focusedBorderColor = if (phone.isNotEmpty() && phone.length != 10)
+                                        MaterialTheme.colorScheme.error
+                                    else
+                                        MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = if (phone.isNotEmpty() && phone.length != 10)
+                                        MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                                    else
+                                        MaterialTheme.colorScheme.outline
+                                ),
+                                isError = phone.isNotEmpty() && phone.length != 10
                             )
+                        }
+
+                        // Helper text / validation message - shown below the row
+                        if (phone.isNotEmpty()) {
+                            Spacer(Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 108.dp), // Align with phone field
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                if (phone.length == 10) {
+                                    Text(
+                                        "✓",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        "Valid phone number",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                } else {
+                                    Text(
+                                        "⚠",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                    Text(
+                                        "Must be exactly 10 digits (${10 - phone.length} more needed)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                        }
+
+                        // Full phone number preview - compact version
+                        if (phone.length == 10) {
+                            Spacer(Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 108.dp), // Align with phone field
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    "📱",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    "$selectedCountryCode $phone",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
 
                     // Error message
                     if (errorMessage.isNotEmpty()) {
                         Spacer(Modifier.height(16.dp))
-                        Text(
-                            errorMessage,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (errorMessage.startsWith("✅"))
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else
+                                    MaterialTheme.colorScheme.errorContainer
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                errorMessage,
+                                color = if (errorMessage.startsWith("✅"))
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                else
+                                    MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(24.dp))
@@ -319,8 +453,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                         errorMessage = "Password must be at least 6 characters"
                                     }
 
-                                    phone.isNotBlank() && phone.length < 10 -> {
-                                        errorMessage = "Please enter a valid phone number"
+                                    phone.isNotBlank() && phone.length != 10 -> {
+                                        errorMessage = "Phone number must be exactly 10 digits"
                                     }
 
                                     else -> {

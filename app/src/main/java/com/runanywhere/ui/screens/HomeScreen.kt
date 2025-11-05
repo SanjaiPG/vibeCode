@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -569,7 +570,20 @@ fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MapScreen(onBack: () -> Unit) {
+fun MapScreen(
+    onBack: () -> Unit,
+    onMakePlan: (String) -> Unit = {}
+) {
+    val repo = remember { DI.repo }
+    val destinations = remember { repo.getPopularDestinations() }
+    val likedDestinations by repo.likedDestinations.collectAsState()
+
+    var selectedDestination by remember {
+        mutableStateOf<com.runanywhere.startup_hackathon20.data.model.Destination?>(
+            null
+        )
+    }
+
     Column(
         Modifier
             .fillMaxSize()
@@ -614,7 +628,7 @@ fun MapScreen(onBack: () -> Unit) {
                                 )
                         ) {
                             Icon(
-                                Icons.Filled.Place,
+                                Icons.Filled.LocationOn,
                                 contentDescription = "Back",
                                 tint = Color.White,
                                 modifier = Modifier.size(24.dp)
@@ -623,13 +637,13 @@ fun MapScreen(onBack: () -> Unit) {
 
                         Column {
                             Text(
-                                "World Map",
+                                "World Destinations Map",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                "Explore destinations",
+                                "${destinations.size} destinations to explore",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.White.copy(alpha = 0.9f)
                             )
@@ -639,113 +653,688 @@ fun MapScreen(onBack: () -> Unit) {
             }
         }
 
-        // Map content area
-        Box(
+        // Show destination details if one is selected
+        if (selectedDestination != null) {
+            DestinationDetailsDialog(
+                destination = selectedDestination!!,
+                isLiked = likedDestinations.contains(selectedDestination!!.id),
+                onDismiss = { selectedDestination = null },
+                onToggleLike = { id ->
+                    if (likedDestinations.contains(id)) {
+                        repo.unlikeDestination(id)
+                    } else {
+                        repo.likeDestination(id)
+                    }
+                },
+                onMakePlan = {
+                    selectedDestination = null
+                    onMakePlan(it)
+                }
+            )
+        }
+
+        // Map content area with all destinations
+        LazyColumn(
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF0F9FF)),
-            contentAlignment = Alignment.Center
+                .background(Color(0xFFF0F9FF))
         ) {
-            // Map placeholder
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.padding(24.dp)
-            ) {
-                // World map emoji
-                Text(
-                    "🗺️",
-                    fontSize = 80.sp
-                )
+            // Section header
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF3B82F6)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("🗺️", fontSize = 32.sp)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Explore the World",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                "Tap any destination to see details, hotels, restaurants & reviews",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
+                }
+            }
 
+            // Group destinations by country
+            val groupedDestinations = destinations.groupBy { it.country }
+
+            groupedDestinations.forEach { (country, countryDestinations) ->
+                item {
+                    // Country header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.Place,
+                            contentDescription = null,
+                            tint = Color(0xFF0EA5E9),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            country,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F2937)
+                        )
+                        Text(
+                            "(${countryDestinations.size})",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF6B7280)
+                        )
+                    }
+                }
+
+                items(countryDestinations) { destination ->
+                    DestinationMapCard(
+                        destination = destination,
+                        isLiked = likedDestinations.contains(destination.id),
+                        onClick = { selectedDestination = destination }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DestinationMapCard(
+    destination: com.runanywhere.startup_hackathon20.data.model.Destination,
+    isLiked: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 8.dp
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Image placeholder with gradient
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF0EA5E9),
+                                Color(0xFF3B82F6),
+                                Color(0xFF2563EB)
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
-                    "Interactive Map",
+                    destination.name.take(2).uppercase(),
                     style = MaterialTheme.typography.headlineMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    destination.name,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF1F2937)
                 )
-
-                Text(
-                    "Map integration coming soon!",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color(0xFF6B7280),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                // Sample destination cards
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    ),
-                    elevation = CardDefaults.cardElevation(
-                        defaultElevation = 4.dp
-                    )
+                Spacer(Modifier.height(4.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    Icon(
+                        Icons.Filled.Star,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = Color(0xFFFBBF24)
+                    )
+                    Text(
+                        "${destination.rating}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF1F2937)
+                    )
+                    Text(
+                        "(${destination.reviewCount})",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF6B7280)
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        color = Color(0xFFDBEAFE),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            "📍 Featured Destinations",
-                            style = MaterialTheme.typography.titleMedium,
+                            destination.currencyCode,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF1E40AF),
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0EA5E9)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
+                    }
+                    if (destination.hotels.isNotEmpty()) {
+                        Text(
+                            "🏨 ${destination.hotels.size}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF6B7280)
+                        )
+                    }
+                    if (destination.restaurants.isNotEmpty()) {
+                        Text(
+                            "🍽️ ${destination.restaurants.size}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF6B7280)
+                        )
+                    }
+                }
+            }
 
-                        Divider(color = Color(0xFFE5E7EB))
+            Icon(
+                if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                contentDescription = "Liked",
+                tint = if (isLiked) Color(0xFF3B82F6) else Color(0xFF9CA3AF),
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DestinationDetailsDialog(
+    destination: com.runanywhere.startup_hackathon20.data.model.Destination,
+    isLiked: Boolean,
+    onDismiss: () -> Unit,
+    onToggleLike: (String) -> Unit,
+    onMakePlan: (String) -> Unit
+) {
+    val scrollState = rememberScrollState()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.9f),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                // Header with gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color(0xFF0EA5E9),
+                                        Color(0xFF3B82F6),
+                                        Color(0xFF2563EB)
+                                    )
+                                )
+                            )
+                    )
+
+                    // Close button
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp)
+                            .size(40.dp)
+                            .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                    ) {
+                        Text("✕", fontSize = 20.sp, color = Color.White)
+                    }
+
+                    // Destination name and info
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(20.dp)
+                    ) {
+                        Text(
+                            destination.name,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("🗼", fontSize = 32.sp)
-                                Text(
-                                    "Paris",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("🏛️", fontSize = 32.sp)
-                                Text(
-                                    "Rome",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("🗽", fontSize = 32.sp)
-                                Text(
-                                    "New York",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
+                            Icon(
+                                Icons.Filled.LocationOn,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                destination.country,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                            Text(
+                                "• ${destination.currencyCode}",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
                         }
                     }
                 }
 
-                Button(
-                    onClick = onBack,
+                // Scrollable content
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF3B82F6)
-                    )
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    Text(
-                        "Back to Home",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    // Rating & Wishlist Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFFBBF24),
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Column {
+                                Text(
+                                    "${destination.rating} / 5.0",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1F2937)
+                                )
+                                Text(
+                                    "${destination.reviewCount} reviews",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF6B7280)
+                                )
+                            }
+                        }
+
+                        // Wishlist button
+                        IconButton(
+                            onClick = { onToggleLike(destination.id) },
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(
+                                    if (isLiked) Color(0xFFDBEAFE) else Color(0xFFF3F4F6),
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(
+                                if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = if (isLiked) "Remove from Wishlist" else "Add to Wishlist",
+                                tint = if (isLiked) Color(0xFF3B82F6) else Color(0xFF6B7280),
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+
+                    Divider(color = Color(0xFFE5E7EB))
+
+                    // About Section
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "About",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F2937)
+                        )
+                        Text(
+                            destination.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF4B5563),
+                            lineHeight = 24.sp
+                        )
+                    }
+
+                    // Hotels Section
+                    if (destination.hotels.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text("🏨", fontSize = 24.sp)
+                                Text(
+                                    "Top Hotels (${destination.hotels.size})",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1F2937)
+                                )
+                            }
+
+                            destination.hotels.forEach { hotel ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFF9FAFB)
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.Top
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    hotel.name,
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF1F2937)
+                                                )
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Filled.Star,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(14.dp),
+                                                        tint = Color(0xFFFBBF24)
+                                                    )
+                                                    Text(
+                                                        "${hotel.rating}",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = Color(0xFF1F2937)
+                                                    )
+                                                }
+                                            }
+                                            Text(
+                                                hotel.pricePerNight,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF059669)
+                                            )
+                                        }
+                                        // Amenities
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            hotel.amenities.take(3).forEach { amenity ->
+                                                Surface(
+                                                    color = Color(0xFFDBEAFE),
+                                                    shape = RoundedCornerShape(6.dp)
+                                                ) {
+                                                    Text(
+                                                        amenity,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = Color(0xFF1E40AF),
+                                                        modifier = Modifier.padding(
+                                                            horizontal = 6.dp,
+                                                            vertical = 3.dp
+                                                        )
+                                                    )
+                                                }
+                                            }
+                                            if (hotel.amenities.size > 3) {
+                                                Text(
+                                                    "+${hotel.amenities.size - 3}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = Color(0xFF6B7280)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Restaurants Section
+                    if (destination.restaurants.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text("🍽️", fontSize = 24.sp)
+                                Text(
+                                    "Top Restaurants (${destination.restaurants.size})",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1F2937)
+                                )
+                            }
+
+                            destination.restaurants.forEach { restaurant ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFF9FAFB)
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                restaurant.name,
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF1F2937)
+                                            )
+                                            Text(
+                                                restaurant.cuisine,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color(0xFF6B7280)
+                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Filled.Star,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(14.dp),
+                                                        tint = Color(0xFFFBBF24)
+                                                    )
+                                                    Text(
+                                                        "${restaurant.rating}",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = Color(0xFF1F2937)
+                                                    )
+                                                }
+                                                Text(
+                                                    "• ${restaurant.priceRange}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = Color(0xFF059669),
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            restaurant.imageEmoji,
+                                            fontSize = 32.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Reviews Section
+                    if (destination.topReviews.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text("💬", fontSize = 24.sp)
+                                Text(
+                                    "Popular Reviews",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1F2937)
+                                )
+                            }
+
+                            destination.topReviews.forEach { review ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color(0xFFF9FAFB)
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Text(review.userEmoji, fontSize = 32.sp)
+                                                Column {
+                                                    Text(
+                                                        review.userName,
+                                                        style = MaterialTheme.typography.titleSmall,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color(0xFF1F2937)
+                                                    )
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.spacedBy(
+                                                            2.dp
+                                                        )
+                                                    ) {
+                                                        repeat(review.rating) {
+                                                            Icon(
+                                                                Icons.Filled.Star,
+                                                                contentDescription = null,
+                                                                modifier = Modifier.size(14.dp),
+                                                                tint = Color(0xFFFBBF24)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            Text(
+                                                review.date,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color(0xFF9CA3AF)
+                                            )
+                                        }
+                                        Text(
+                                            review.comment,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFF4B5563),
+                                            lineHeight = 20.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Make a Plan Button
+                    Button(
+                        onClick = { onMakePlan(destination.id) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF3B82F6)
+                        )
+                    ) {
+                        Text(
+                            "✈️ Make a Plan to ${destination.name}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(Modifier.height(20.dp))
                 }
             }
         }
