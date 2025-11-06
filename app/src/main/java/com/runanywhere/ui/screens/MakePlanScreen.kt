@@ -19,7 +19,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.clip
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,7 +55,7 @@ fun MakePlanScreen(
     var from by remember { mutableStateOf("") }
     var to by remember(destination) { mutableStateOf(destination?.name ?: "Paris") }
     var startDate by remember { mutableStateOf("") }
-    var nights by remember { mutableStateOf("3") }
+    var endDate by remember { mutableStateOf("") }
     var budget by remember { mutableStateOf("50000") }
     var people by remember { mutableStateOf("2") }
     var foodCategory by remember { mutableStateOf("Veg") }
@@ -63,7 +63,33 @@ fun MakePlanScreen(
 
     var expandedFood by remember { mutableStateOf(false) }
     var expandedTransport by remember { mutableStateOf(false) }
-    var showDatePicker by remember { mutableStateOf(false) }
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+
+    // Date formatter
+    val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
+
+    // Calculate days and nights dynamically
+    val (days, nights) = remember(startDate, endDate) {
+        if (startDate.isNotBlank() && endDate.isNotBlank()) {
+            try {
+                val start = dateFormatter.parse(startDate)
+                val end = dateFormatter.parse(endDate)
+                if (start != null && end != null && end.after(start)) {
+                    val diffInMillis = end.time - start.time
+                    val calculatedDays = (diffInMillis / (1000 * 60 * 60 * 24)).toInt() + 1
+                    val calculatedNights = calculatedDays - 1
+                    Pair(calculatedDays, calculatedNights)
+                } else {
+                    Pair(0, 0)
+                }
+            } catch (e: Exception) {
+                Pair(0, 0)
+            }
+        } else {
+            Pair(0, 0)
+        }
+    }
 
     val isLoading by vm.isLoading.collectAsState()
     val modelLoaded by vm.currentModelId.collectAsState()
@@ -71,9 +97,6 @@ fun MakePlanScreen(
 
     val foodOptions = listOf("Veg", "Non-Veg", "Both")
     val transportOptions = listOf("Flight", "Train", "Bus", "Car", "Bike")
-
-    // Date formatter
-    val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
 
     Column(
         Modifier
@@ -289,7 +312,7 @@ fun MakePlanScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { showDatePicker = true },
+                    .clickable { showStartDatePicker = true },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -300,28 +323,112 @@ fun MakePlanScreen(
                 enabled = false
             )
 
-            // DatePickerDialog
-            if (showDatePicker) {
+            // Start Date Picker Dialog
+            if (showStartDatePicker) {
                 val datePickerState = rememberDatePickerState(
                     initialSelectedDateMillis = System.currentTimeMillis()
                 )
 
                 DatePickerDialog(
-                    onDismissRequest = { showDatePicker = false },
+                    onDismissRequest = { showStartDatePicker = false },
                     confirmButton = {
                         TextButton(
                             onClick = {
                                 datePickerState.selectedDateMillis?.let { millis ->
                                     startDate = dateFormatter.format(Date(millis))
                                 }
-                                showDatePicker = false
+                                showStartDatePicker = false
                             }
                         ) {
                             Text("OK")
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = { showDatePicker = false }) {
+                        TextButton(onClick = { showStartDatePicker = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                ) {
+                    DatePicker(state = datePickerState)
+                }
+            }
+
+            OutlinedTextField(
+                value = endDate,
+                onValueChange = {},
+                label = { Text("End Date") },
+                placeholder = { Text("Select date") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.DateRange,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                trailingIcon = {
+                    Icon(
+                        Icons.Filled.DateRange,
+                        contentDescription = "Open Calendar",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showEndDatePicker = true },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                ),
+                singleLine = true,
+                readOnly = true,
+                enabled = false
+            )
+
+            // End Date Picker Dialog
+            if (showEndDatePicker) {
+                val initialDateMillis = if (startDate.isNotBlank()) {
+                    try {
+                        dateFormatter.parse(startDate)?.time ?: System.currentTimeMillis()
+                    } catch (e: Exception) {
+                        System.currentTimeMillis()
+                    }
+                } else {
+                    System.currentTimeMillis()
+                }
+
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = initialDateMillis
+                )
+
+                DatePickerDialog(
+                    onDismissRequest = { showEndDatePicker = false },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                datePickerState.selectedDateMillis?.let { millis ->
+                                    // Validate that selected end date is after start date
+                                    if (startDate.isNotBlank()) {
+                                        try {
+                                            val startMillis = dateFormatter.parse(startDate)?.time
+                                            if (startMillis != null && millis >= startMillis) {
+                                                endDate = dateFormatter.format(Date(millis))
+                                            }
+                                        } catch (e: Exception) {
+                                            endDate = dateFormatter.format(Date(millis))
+                                        }
+                                    } else {
+                                        endDate = dateFormatter.format(Date(millis))
+                                    }
+                                }
+                                showEndDatePicker = false
+                            }
+                        ) {
+                            Text("OK")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showEndDatePicker = false }) {
                             Text("Cancel")
                         }
                     }
@@ -335,15 +442,128 @@ fun MakePlanScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(modifier = Modifier.weight(1f)) {
-                    CustomTextField(
-                        value = nights,
-                        onValueChange = { nights = it },
-                        label = "Nights",
-                        placeholder = "3",
-                        icon = Icons.Filled.Home
+                    OutlinedTextField(
+                        value = if (days > 0) days.toString() else "",
+                        onValueChange = { },
+                        label = { Text("Days") },
+                        placeholder = { Text("Auto") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Home,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        trailingIcon = {
+                            if (days > 0) {
+                                Text(
+                                    "📅",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            disabledBorderColor = MaterialTheme.colorScheme.outline,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        singleLine = true,
+                        readOnly = true,
+                        enabled = false
                     )
                 }
 
+                Box(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = if (nights > 0) nights.toString() else "",
+                        onValueChange = { },
+                        label = { Text("Nights") },
+                        placeholder = { Text("Auto") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Home,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        trailingIcon = {
+                            if (nights > 0) {
+                                Text(
+                                    "🌙",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            disabledBorderColor = MaterialTheme.colorScheme.outline,
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        singleLine = true,
+                        readOnly = true,
+                        enabled = false
+                    )
+                }
+            }
+
+            // Add info card about auto-calculation
+            if (days > 0 && nights > 0) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFDCFCE7)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("✅", fontSize = 20.sp)
+                        Text(
+                            "Trip duration: $days days, $nights nights",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF166534),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            } else if (startDate.isNotBlank() && endDate.isNotBlank() && days == 0) {
+                // Show error if dates are invalid
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFEE2E2)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("⚠️", fontSize = 20.sp)
+                        Text(
+                            "End date must be after start date",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF991B1B),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 Box(modifier = Modifier.weight(1f)) {
                     CustomTextField(
                         value = people,
@@ -606,14 +826,22 @@ fun MakePlanScreen(
             // Generate Button
             Button(
                 onClick = {
-                    val form = PlanForm(from, to, startDate, nights.toIntOrNull() ?: 3, budget.toIntOrNull() ?: 50000, people.toIntOrNull() ?: 2)
+                    val form = PlanForm(
+                        from = from,
+                        to = to,
+                        startDate = startDate,
+                        nights = nights,
+                        budget = budget.toIntOrNull() ?: 50000,
+                        people = people.toIntOrNull() ?: 2
+                    )
                     // Use generatePlanDirect to skip chatbot and go straight to result screen
                     vm.generatePlanDirect(form) { id ->
                         onPlanCreated(id)
                         // Don't navigate to chat - the onPlanCreated will navigate to plan result
                     }
                 },
-                enabled = !isLoading && modelLoaded != null && from.isNotBlank() && to.isNotBlank() && transportMode.isNotBlank(),
+                enabled = !isLoading && modelLoaded != null && from.isNotBlank() && to.isNotBlank() &&
+                        transportMode.isNotBlank() && startDate.isNotBlank() && endDate.isNotBlank() && days > 0,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
