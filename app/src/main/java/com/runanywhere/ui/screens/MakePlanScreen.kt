@@ -303,13 +303,6 @@ fun MakePlanScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 },
-                trailingIcon = {
-                    Icon(
-                        Icons.Filled.DateRange,
-                        contentDescription = "Open Calendar",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { showStartDatePicker = true },
@@ -362,13 +355,6 @@ fun MakePlanScreen(
                     Icon(
                         Icons.Filled.DateRange,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                },
-                trailingIcon = {
-                    Icon(
-                        Icons.Filled.DateRange,
-                        contentDescription = "Open Calendar",
                         tint = MaterialTheme.colorScheme.primary
                     )
                 },
