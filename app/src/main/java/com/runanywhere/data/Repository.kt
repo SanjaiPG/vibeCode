@@ -384,7 +384,63 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1502602898657-3e91760cbb34",
                 currencyCode = "EUR",
                 rating = 4.8,
-                reviewCount = 12543
+                reviewCount = 12543,
+                hotels = listOf(
+                    Hotel(
+                        name = "Hôtel Plaza Athénée",
+                        rating = 4.9,
+                        pricePerNight = "€750",
+                        amenities = listOf(
+                            "Spa",
+                            "Michelin Restaurant",
+                            "Eiffel Tower View",
+                            "Concierge"
+                        ),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Le Marais Boutique",
+                        rating = 4.6,
+                        pricePerNight = "€180",
+                        amenities = listOf(
+                            "WiFi",
+                            "Breakfast",
+                            "Historic District",
+                            "Rooftop Terrace"
+                        ),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Montmartre Charm Hotel",
+                        rating = 4.4,
+                        pricePerNight = "€120",
+                        amenities = listOf("WiFi", "24/7 Reception", "Near Sacré-Cœur", "Cafe"),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "Le Jules Verne",
+                        rating = 4.8,
+                        cuisine = "French Fine Dining",
+                        priceRange = "€€€€",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "L'Ami Jean",
+                        rating = 4.7,
+                        cuisine = "Bistro",
+                        priceRange = "€€€",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Breizh Café",
+                        rating = 4.5,
+                        cuisine = "Crêperie",
+                        priceRange = "€€",
+                        imageEmoji = "🍽️"
+                    )
+                )
             ),
             Destination(
                 id = "tokyo",
@@ -396,7 +452,58 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf",
                 currencyCode = "JPY",
                 rating = 4.9,
-                reviewCount = 15678
+                reviewCount = 15678,
+                hotels = listOf(
+                    Hotel(
+                        name = "Park Hyatt Tokyo",
+                        rating = 4.9,
+                        pricePerNight = "¥60,000",
+                        amenities = listOf("City Views", "Pool", "Spa", "Fine Dining"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Shinjuku Prince Hotel",
+                        rating = 4.5,
+                        pricePerNight = "¥15,000",
+                        amenities = listOf("WiFi", "Restaurant", "Metro Access", "Business Center"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Asakusa View Hotel",
+                        rating = 4.3,
+                        pricePerNight = "¥12,000",
+                        amenities = listOf(
+                            "Skytree View",
+                            "Onsen",
+                            "Traditional Area",
+                            "Breakfast"
+                        ),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "Sukiyabashi Jiro",
+                        rating = 4.9,
+                        cuisine = "Sushi",
+                        priceRange = "¥¥¥¥",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Ichiran Ramen",
+                        rating = 4.6,
+                        cuisine = "Ramen",
+                        priceRange = "¥",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Tsukiji Sushiko",
+                        rating = 4.7,
+                        cuisine = "Seafood",
+                        priceRange = "¥¥",
+                        imageEmoji = "🍽️"
+                    )
+                )
             ),
             Destination(
                 id = "bali",
@@ -408,7 +515,53 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1537996194471-e657df975ab4",
                 currencyCode = "IDR",
                 rating = 4.7,
-                reviewCount = 9876
+                reviewCount = 9876,
+                hotels = listOf(
+                    Hotel(
+                        name = "COMO Uma Ubud",
+                        rating = 4.8,
+                        pricePerNight = "Rp 4,500,000",
+                        amenities = listOf("Infinity Pool", "Spa", "Yoga", "Rice Field Views"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Potato Head Beach Club",
+                        rating = 4.6,
+                        pricePerNight = "Rp 3,200,000",
+                        amenities = listOf("Beachfront", "Pool", "Restaurants", "Nightlife"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Seminyak Beach Resort",
+                        rating = 4.4,
+                        pricePerNight = "Rp 1,800,000",
+                        amenities = listOf("Beach Access", "Pool", "Spa", "WiFi"),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "Locavore",
+                        rating = 4.9,
+                        cuisine = "Modern Indonesian",
+                        priceRange = "Rp Rp Rp Rp",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Warung Biah Biah",
+                        rating = 4.5,
+                        cuisine = "Balinese",
+                        priceRange = "Rp",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Mozaic Restaurant",
+                        rating = 4.8,
+                        cuisine = "French-Indonesian Fusion",
+                        priceRange = "Rp Rp Rp",
+                        imageEmoji = "🍽️"
+                    )
+                )
             ),
             Destination(
                 id = "newyork",
@@ -420,7 +573,58 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9",
                 currencyCode = "USD",
                 rating = 4.6,
-                reviewCount = 18765
+                reviewCount = 18765,
+                hotels = listOf(
+                    Hotel(
+                        name = "The Plaza Hotel",
+                        rating = 4.8,
+                        pricePerNight = "$850",
+                        amenities = listOf(
+                            "Central Park View",
+                            "Spa",
+                            "Michelin Dining",
+                            "Concierge"
+                        ),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Pod Times Square",
+                        rating = 4.3,
+                        pricePerNight = "$180",
+                        amenities = listOf("Rooftop Bar", "WiFi", "Modern Rooms", "Prime Location"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Hotel Beacon",
+                        rating = 4.4,
+                        pricePerNight = "$250",
+                        amenities = listOf("Kitchen", "Upper West Side", "WiFi", "Breakfast"),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "Eleven Madison Park",
+                        rating = 4.9,
+                        cuisine = "Contemporary American",
+                        priceRange = "$$$$",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Joe's Pizza",
+                        rating = 4.5,
+                        cuisine = "Pizza",
+                        priceRange = "$",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Katz's Delicatessen",
+                        rating = 4.6,
+                        cuisine = "Deli",
+                        priceRange = "$$",
+                        imageEmoji = "🍽️"
+                    )
+                )
             ),
             Destination(
                 id = "rome",
@@ -432,7 +636,63 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1552832230-c0197dd311b5",
                 currencyCode = "EUR",
                 rating = 4.8,
-                reviewCount = 11234
+                reviewCount = 11234,
+                hotels = listOf(
+                    Hotel(
+                        name = "Hotel Hassler Roma",
+                        rating = 4.9,
+                        pricePerNight = "€650",
+                        amenities = listOf(
+                            "Spanish Steps View",
+                            "Michelin Restaurant",
+                            "Spa",
+                            "Rooftop"
+                        ),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Hotel Campo de' Fiori",
+                        rating = 4.5,
+                        pricePerNight = "€200",
+                        amenities = listOf("Terrace", "Historic Center", "WiFi", "Breakfast"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Trastevere Boutique",
+                        rating = 4.4,
+                        pricePerNight = "€130",
+                        amenities = listOf(
+                            "WiFi",
+                            "Charming District",
+                            "Local Restaurants",
+                            "Breakfast"
+                        ),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "La Pergola",
+                        rating = 4.9,
+                        cuisine = "Italian Fine Dining",
+                        priceRange = "€€€€",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Trattoria Da Enzo",
+                        rating = 4.7,
+                        cuisine = "Traditional Roman",
+                        priceRange = "€€",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Pizzarium",
+                        rating = 4.6,
+                        cuisine = "Pizza al Taglio",
+                        priceRange = "€",
+                        imageEmoji = "🍽️"
+                    )
+                )
             ),
             Destination(
                 id = "maldives",
@@ -444,7 +704,58 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1514282401047-d79a71a590e8",
                 currencyCode = "MVR",
                 rating = 4.9,
-                reviewCount = 8765
+                reviewCount = 8765,
+                hotels = listOf(
+                    Hotel(
+                        name = "Soneva Fushi",
+                        rating = 5.0,
+                        pricePerNight = "$1,200",
+                        amenities = listOf("Private Villa", "Overwater", "Butler Service", "Spa"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Conrad Maldives",
+                        rating = 4.8,
+                        pricePerNight = "$800",
+                        amenities = listOf(
+                            "Underwater Restaurant",
+                            "Snorkeling",
+                            "Spa",
+                            "All-Inclusive"
+                        ),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Paradise Island Resort",
+                        rating = 4.5,
+                        pricePerNight = "$350",
+                        amenities = listOf("Beach Access", "Diving Center", "Pool", "WiFi"),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "Ithaa Undersea",
+                        rating = 4.9,
+                        cuisine = "Contemporary",
+                        priceRange = "$$$$",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Sea.Fire.Salt",
+                        rating = 4.7,
+                        cuisine = "Seafood Grill",
+                        priceRange = "$$$",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Sunset Grill",
+                        rating = 4.6,
+                        cuisine = "Maldivian",
+                        priceRange = "$$",
+                        imageEmoji = "🍽️"
+                    )
+                )
             ),
             Destination(
                 id = "london",
@@ -456,7 +767,53 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad",
                 currencyCode = "GBP",
                 rating = 4.7,
-                reviewCount = 14567
+                reviewCount = 14567,
+                hotels = listOf(
+                    Hotel(
+                        name = "The Savoy",
+                        rating = 4.9,
+                        pricePerNight = "£500",
+                        amenities = listOf("Thames View", "Art Deco", "Afternoon Tea", "Spa"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "CitizenM Tower of London",
+                        rating = 4.5,
+                        pricePerNight = "£150",
+                        amenities = listOf("Modern Design", "Rooftop Bar", "WiFi", "24/7 Food"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Premier Inn London",
+                        rating = 4.2,
+                        pricePerNight = "£90",
+                        amenities = listOf("Breakfast", "WiFi", "Central Location", "Comfy Beds"),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "Sketch",
+                        rating = 4.7,
+                        cuisine = "Contemporary European",
+                        priceRange = "££££",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Dishoom",
+                        rating = 4.6,
+                        cuisine = "Indian",
+                        priceRange = "££",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Borough Market Food Stalls",
+                        rating = 4.5,
+                        cuisine = "International Street Food",
+                        priceRange = "£",
+                        imageEmoji = "🍽️"
+                    )
+                )
             ),
             Destination(
                 id = "dubai",
@@ -468,7 +825,63 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1512453979798-5ea266f8880c",
                 currencyCode = "AED",
                 rating = 4.6,
-                reviewCount = 13456
+                reviewCount = 13456,
+                hotels = listOf(
+                    Hotel(
+                        name = "Burj Al Arab",
+                        rating = 5.0,
+                        pricePerNight = "AED 8,000",
+                        amenities = listOf(
+                            "Iconic Sail Shape",
+                            "Butler Service",
+                            "Private Beach",
+                            "Gold Decor"
+                        ),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Atlantis The Palm",
+                        rating = 4.7,
+                        pricePerNight = "AED 2,500",
+                        amenities = listOf(
+                            "Water Park",
+                            "Aquarium",
+                            "Beach",
+                            "Multiple Restaurants"
+                        ),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Rove Downtown",
+                        rating = 4.3,
+                        pricePerNight = "AED 450",
+                        amenities = listOf("Modern", "Burj Khalifa View", "Pool", "WiFi"),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "Nobu Dubai",
+                        rating = 4.8,
+                        cuisine = "Japanese-Peruvian",
+                        priceRange = "AED AED AED AED",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Al Nafoorah",
+                        rating = 4.6,
+                        cuisine = "Lebanese",
+                        priceRange = "AED AED AED",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Arabian Tea House",
+                        rating = 4.4,
+                        cuisine = "Emirati",
+                        priceRange = "AED AED",
+                        imageEmoji = "🍽️"
+                    )
+                )
             ),
             Destination(
                 id = "santorini",
@@ -480,7 +893,58 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff",
                 currencyCode = "EUR",
                 rating = 4.8,
-                reviewCount = 10987
+                reviewCount = 10987,
+                hotels = listOf(
+                    Hotel(
+                        name = "Canaves Oia Suites",
+                        rating = 4.9,
+                        pricePerNight = "€600",
+                        amenities = listOf(
+                            "Caldera View",
+                            "Private Pool",
+                            "Cave Suite",
+                            "Sunset Views"
+                        ),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Astra Suites",
+                        rating = 4.7,
+                        pricePerNight = "€350",
+                        amenities = listOf("Infinity Pool", "Caldera View", "Breakfast", "WiFi"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Karma Boutique",
+                        rating = 4.4,
+                        pricePerNight = "€180",
+                        amenities = listOf("Pool", "Sunset View", "Traditional Style", "Breakfast"),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "Selene",
+                        rating = 4.8,
+                        cuisine = "Modern Greek",
+                        priceRange = "€€€€",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Metaxi Mas",
+                        rating = 4.7,
+                        cuisine = "Traditional Greek",
+                        priceRange = "€€",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Lucky's Souvlakis",
+                        rating = 4.5,
+                        cuisine = "Greek Street Food",
+                        priceRange = "€",
+                        imageEmoji = "🍽️"
+                    )
+                )
             ),
             Destination(
                 id = "bangkok",
@@ -492,7 +956,53 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1508009603885-50cf7c579365",
                 currencyCode = "THB",
                 rating = 4.7,
-                reviewCount = 12345
+                reviewCount = 12345,
+                hotels = listOf(
+                    Hotel(
+                        name = "Mandarin Oriental Bangkok",
+                        rating = 4.9,
+                        pricePerNight = "฿12,000",
+                        amenities = listOf("River View", "Spa", "Fine Dining", "Historic"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Lub d Bangkok Silom",
+                        rating = 4.4,
+                        pricePerNight = "฿800",
+                        amenities = listOf("Social Hostel", "Rooftop", "WiFi", "Trendy"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Siam@Siam Design Hotel",
+                        rating = 4.5,
+                        pricePerNight = "฿2,500",
+                        amenities = listOf("Rooftop Pool", "Modern", "BTS Access", "Restaurant"),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "Gaggan Anand",
+                        rating = 4.9,
+                        cuisine = "Progressive Indian",
+                        priceRange = "฿฿฿฿",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Jay Fai",
+                        rating = 4.7,
+                        cuisine = "Thai Street Food",
+                        priceRange = "฿฿",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Thip Samai Pad Thai",
+                        rating = 4.6,
+                        cuisine = "Pad Thai Specialist",
+                        priceRange = "฿",
+                        imageEmoji = "🍽️"
+                    )
+                )
             ),
             Destination(
                 id = "sydney",
@@ -504,7 +1014,58 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9",
                 currencyCode = "AUD",
                 rating = 4.8,
-                reviewCount = 11234
+                reviewCount = 11234,
+                hotels = listOf(
+                    Hotel(
+                        name = "Park Hyatt Sydney",
+                        rating = 4.9,
+                        pricePerNight = "A$800",
+                        amenities = listOf(
+                            "Opera House View",
+                            "Harbor",
+                            "Rooftop Pool",
+                            "Fine Dining"
+                        ),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "The Russell Hotel",
+                        rating = 4.5,
+                        pricePerNight = "A$200",
+                        amenities = listOf("The Rocks", "Historic", "Rooftop", "WiFi"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Wake Up! Sydney",
+                        rating = 4.2,
+                        pricePerNight = "A$80",
+                        amenities = listOf("Central", "Social", "Cafe", "Tours"),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "Quay",
+                        rating = 4.9,
+                        cuisine = "Contemporary Australian",
+                        priceRange = "A$ A$ A$ A$",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Icebergs Dining Room",
+                        rating = 4.7,
+                        cuisine = "Italian-Australian",
+                        priceRange = "A$ A$ A$",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Harry's Cafe de Wheels",
+                        rating = 4.5,
+                        cuisine = "Meat Pies",
+                        priceRange = "A$",
+                        imageEmoji = "🍽️"
+                    )
+                )
             ),
             Destination(
                 id = "barcelona",
@@ -516,7 +1077,53 @@ object Repository {
                 imageUrl = "https://images.unsplash.com/photo-1583422409516-2895a77efded",
                 currencyCode = "EUR",
                 rating = 4.9,
-                reviewCount = 13456
+                reviewCount = 13456,
+                hotels = listOf(
+                    Hotel(
+                        name = "Hotel Arts Barcelona",
+                        rating = 4.9,
+                        pricePerNight = "€450",
+                        amenities = listOf("Beachfront", "Spa", "Michelin Dining", "Marina Views"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Hotel DO Plaça Reial",
+                        rating = 4.6,
+                        pricePerNight = "€180",
+                        amenities = listOf("Gothic Quarter", "Rooftop Pool", "Tapas Bar", "WiFi"),
+                        imageEmoji = "🏨"
+                    ),
+                    Hotel(
+                        name = "Casa Gracia Hostel",
+                        rating = 4.4,
+                        pricePerNight = "€35",
+                        amenities = listOf("Gaudí Area", "Rooftop", "Social", "Breakfast"),
+                        imageEmoji = "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant(
+                        name = "Disfrutar",
+                        rating = 4.9,
+                        cuisine = "Avant-garde Spanish",
+                        priceRange = "€€€€",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "Cervecería Catalana",
+                        rating = 4.7,
+                        cuisine = "Tapas",
+                        priceRange = "€€",
+                        imageEmoji = "🍽️"
+                    ),
+                    Restaurant(
+                        name = "La Boqueria Market",
+                        rating = 4.6,
+                        cuisine = "Market Food",
+                        priceRange = "€",
+                        imageEmoji = "🍽️"
+                    )
+                )
             )
         )
     }

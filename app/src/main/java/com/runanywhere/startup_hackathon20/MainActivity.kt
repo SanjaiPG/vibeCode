@@ -864,7 +864,7 @@ fun ModernInputWithVoice(
 // (ChatScreen, ChatMessageBubble, etc.)
 
 @Composable
-fun AttractionCard(attraction: AttractionCard) {
+fun AttractionCard(attraction: AttractionCardData) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

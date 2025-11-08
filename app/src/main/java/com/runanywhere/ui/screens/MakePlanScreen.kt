@@ -768,7 +768,7 @@ fun MakePlanScreen(
                             )
                         }
 
-                        androidx.compose.material3.Divider(
+                        androidx.compose.material3.HorizontalDivider(
                             color = androidx.compose.ui.graphics.Color(0xFF93C5FD),
                             modifier = Modifier.padding(vertical = 4.dp)
                         )

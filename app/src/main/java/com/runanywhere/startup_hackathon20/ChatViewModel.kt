@@ -1,45 +1,25 @@
 package com.runanywhere.startup_hackathon20
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.runanywhere.data.DI
-import com.runanywhere.data.model.Plan
-import com.runanywhere.data.model.PlanForm
-import com.runanywhere.sdk.models.ModelInfo
 import com.runanywhere.sdk.public.RunAnywhere
 import com.runanywhere.sdk.public.extensions.listAvailableModels
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import com.runanywhere.sdk.models.ModelInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.delay
+import com.runanywhere.data.DI
+import com.runanywhere.data.model.Plan
+import com.runanywhere.data.model.PlanForm
+import android.util.Log
 
-// Data classes
+// Simple Message Data Class
 data class ChatMessage(
     val text: String,
     val isUser: Boolean,
     val isPlan: Boolean = false,
     val planData: PlanDisplayData? = null
-)
-
-data class AttractionCard(
-    val title: String,
-    val rating: Double,
-    val duration: String,
-    val cost: String,
-    val description: String,
-    val imageUrl: String?,
-    val category: String = "" // Day 1, Day 2, etc.
 )
 
 data class PlanDisplayData(
@@ -51,29 +31,27 @@ data class PlanDisplayData(
     val budget: Int,
     val itinerary: String,
     val imageUrl: String? = null,
-    val attractions: List<AttractionCard> = emptyList() // New: List of attraction cards
+    val attractions: List<AttractionCardData> = emptyList()
 )
 
+data class AttractionCardData(
+    val title: String,
+    val description: String,
+    val imageUrl: String? = null,
+    val rating: Double = 4.5,
+    val duration: String = "2-3 hours",
+    val cost: String = "$$",
+    val category: String = ""
+)
+
+// ViewModel
 class ChatViewModel : ViewModel() {
-
-    // Use BuildConfig for API keys
-    private val OPENAI_API_KEY = BuildConfig.OPENAI_API_KEY
-    private val UNSPLASH_ACCESS_KEY = BuildConfig.UNSPLASH_ACCESS_KEY
-
-    private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
-        .build()
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
-
-    private val _isModelLoading = MutableStateFlow(false)
-    val isModelLoading: StateFlow<Boolean> = _isModelLoading
 
     private val _availableModels = MutableStateFlow<List<ModelInfo>>(emptyList())
     val availableModels: StateFlow<List<ModelInfo>> = _availableModels
@@ -84,404 +62,133 @@ class ChatViewModel : ViewModel() {
     private val _currentModelId = MutableStateFlow<String?>(null)
     val currentModelId: StateFlow<String?> = _currentModelId
 
-    private val _statusMessage = MutableStateFlow<String>("Ready to generate plans")
+    private val _statusMessage = MutableStateFlow<String>("Tap settings to load AI model")
     val statusMessage: StateFlow<String> = _statusMessage
 
-    private var hasAutoLoadedOnce = false
-    private var isLoadingInProgress = false
+    private val _isModelLoading = MutableStateFlow(false)
+    val isModelLoading: StateFlow<Boolean> = _isModelLoading
 
-    // Fetch image from Unsplash
-    private suspend fun fetchDestinationImage(destination: String): String? =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                Log.d("ChatViewModel", "Fetching image for: $destination")
-                val encodedDestination = java.net.URLEncoder.encode(destination, "UTF-8")
-                val url =
-                    "https://api.unsplash.com/search/photos?query=$encodedDestination&per_page=1&orientation=landscape"
+    private var hasStartedLoading = false
 
-                val request = Request.Builder()
-                    .url(url)
-                    .addHeader("Authorization", "Client-ID $UNSPLASH_ACCESS_KEY")
-                    .build()
-
-                val response = httpClient.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val jsonResponse = JSONObject(response.body?.string() ?: "")
-                    val results = jsonResponse.getJSONArray("results")
-                    if (results.length() > 0) {
-                        val firstImage = results.getJSONObject(0)
-                        val urls = firstImage.getJSONObject("urls")
-                        val imageUrl = urls.getString("regular")
-                        Log.d("ChatViewModel", "✓ Image fetched: $imageUrl")
-                        imageUrl
-                    } else {
-                        Log.w("ChatViewModel", "No images found for: $destination")
-                        null
-                    }
-                } else {
-                    Log.e("ChatViewModel", "Unsplash API error: ${response.code}")
-                    null
-                }
-            } catch (e: Exception) {
-                Log.e("ChatViewModel", "Error fetching image: ${e.message}", e)
-                null
-            }
-        }
-
-    // Generate structured itinerary with attractions using OpenAI API
-    private suspend fun generateStructuredItinerary(form: PlanForm): Pair<String, List<AttractionCard>> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                Log.d("ChatViewModel", "Generating structured itinerary with OpenAI...")
-
-                val prompt = """
-                Create a detailed travel itinerary for ${form.to} from ${form.from}.
-                Duration: ${form.nights} nights (${form.nights + 1} days)
-                People: ${form.people}, Budget: ₹${form.budget}
-                Start Date: ${form.startDate}
-                
-                Provide a JSON response with:
-                1. "summary": Brief overview text
-                2. "attractions": Array of top attractions/activities with:
-                   - "title": Name of place/activity
-                   - "rating": Number 1-5
-                   - "duration": Time needed (e.g., "2-3 hours")
-                   - "cost": Price indicator ($$, $$$)
-                   - "description": Brief description (50 words max)
-                   - "day": Which day to visit (Day 1, Day 2, etc.)
-                
-                Return ONLY valid JSON, no markdown formatting.
-            """.trimIndent()
-
-                val jsonBody = JSONObject().apply {
-                    put("model", "gpt-3.5-turbo")
-                    put("messages", JSONArray().apply {
-                        put(JSONObject().apply {
-                            put("role", "system")
-                            put(
-                                "content",
-                                "You are a travel expert. Return only valid JSON format."
-                            )
-                        })
-                        put(JSONObject().apply {
-                            put("role", "user")
-                            put("content", prompt)
-                        })
-                    })
-                    put("max_tokens", 2000)
-                    put("temperature", 0.7)
-                }
-
-                val requestBody = jsonBody.toString()
-                    .toRequestBody("application/json".toMediaType())
-
-                val request = Request.Builder()
-                    .url("https://api.openai.com/v1/chat/completions")
-                    .addHeader("Authorization", "Bearer $OPENAI_API_KEY")
-                    .addHeader("Content-Type", "application/json")
-                    .post(requestBody)
-                    .build()
-
-                val response = httpClient.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val responseBody = response.body?.string() ?: ""
-                    val jsonResponse = JSONObject(responseBody)
-                    val choices = jsonResponse.getJSONArray("choices")
-                    if (choices.length() > 0) {
-                        val message = choices.getJSONObject(0).getJSONObject("message")
-                        var content = message.getString("content").trim()
-
-                        // Clean markdown formatting if present
-                        content = content.replace("```json", "").replace("```", "").trim()
-
-                        try {
-                            val planJson = JSONObject(content)
-                            val summary =
-                                planJson.optString("summary", "Your travel plan for ${form.to}")
-                            val attractionsArray = planJson.optJSONArray("attractions")
-
-                            val attractions = mutableListOf<AttractionCard>()
-                            if (attractionsArray != null) {
-                                for (i in 0 until attractionsArray.length()) {
-                                    val attr = attractionsArray.getJSONObject(i)
-
-                                    // Fetch image for each attraction
-                                    val imageUrl =
-                                        fetchDestinationImage("${attr.getString("title")} ${form.to}")
-
-                                    attractions.add(
-                                        AttractionCard(
-                                            title = attr.getString("title"),
-                                            rating = attr.optDouble("rating", 4.5),
-                                            duration = attr.optString("duration", "2-3 hours"),
-                                            cost = attr.optString("cost", "$$"),
-                                            description = attr.getString("description"),
-                                            imageUrl = imageUrl,
-                                            category = attr.optString("day", "Day 1")
-                                        )
-                                    )
-                                }
-                            }
-
-                            Log.d("ChatViewModel", "✓ Generated ${attractions.size} attractions")
-                            Pair(summary, attractions)
-                        } catch (e: Exception) {
-                            Log.e("ChatViewModel", "JSON parsing error: ${e.message}")
-                            Pair("Generated plan for ${form.to}", emptyList())
-                        }
-                    } else {
-                        Log.e("ChatViewModel", "No response from OpenAI")
-                        Pair("Error: No response from AI", emptyList())
-                    }
-                } else {
-                    val errorBody = response.body?.string() ?: "Unknown error"
-                    Log.e("ChatViewModel", "OpenAI API error: ${response.code} - $errorBody")
-                    Pair("Error generating itinerary: API returned ${response.code}", emptyList())
-                }
-            } catch (e: Exception) {
-                Log.e("ChatViewModel", "Error calling OpenAI: ${e.message}", e)
-                Pair("Error: ${e.message}", emptyList())
-            }
-        }
-
-    // Main function to generate plan using APIs
-    fun generatePlanWithAPIs(form: PlanForm, onComplete: (String) -> Unit) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                Log.i("ChatViewModel", "Starting plan generation for ${form.from} → ${form.to}")
-
-                // Add user form summary to chat
-                val formSummary =
-                    "📝 Planning trip: ${form.from} → ${form.to}, ${form.nights} nights, ${form.people} people, ₹${form.budget}"
-                _messages.value += ChatMessage(formSummary, isUser = true)
-
-                // Show initial plan card with loading state
-                val initialPlanData = PlanDisplayData(
-                    from = form.from,
-                    to = form.to,
-                    startDate = form.startDate,
-                    nights = form.nights,
-                    people = form.people,
-                    budget = form.budget,
-                    itinerary = "🔄 Generating your personalized itinerary with AI...\n\nThis may take 30-60 seconds. Please wait...",
-                    imageUrl = null,
-                    attractions = emptyList()
-                )
-                _messages.value += ChatMessage(
-                    "",
-                    isUser = false,
-                    isPlan = true,
-                    planData = initialPlanData
-                )
-
-                // Step 1: Fetch main destination image
-                _statusMessage.value = "📸 Fetching destination images..."
-                val mainImageUrl = fetchDestinationImage(form.to)
-
-                // Step 2: Generate structured itinerary with attractions
-                _statusMessage.value = "✨ AI is creating your itinerary with attraction cards..."
-                val (summary, attractions) = generateStructuredItinerary(form)
-
-                // Step 3: Update plan card with complete data
-                val finalPlanData = PlanDisplayData(
-                    from = form.from,
-                    to = form.to,
-                    startDate = form.startDate,
-                    nights = form.nights,
-                    people = form.people,
-                    budget = form.budget,
-                    itinerary = summary,
-                    imageUrl = mainImageUrl,
-                    attractions = attractions
-                )
-
-                val currentMessages = _messages.value.toMutableList()
-                if (currentMessages.lastOrNull()?.isPlan == true) {
-                    currentMessages[currentMessages.lastIndex] =
-                        ChatMessage("", isUser = false, isPlan = true, planData = finalPlanData)
-                    _messages.value = currentMessages
-                }
-
-                // Step 4: Save plan to database
-                val title = "${form.from} → ${form.to} (${form.nights} nights)"
-                val id = java.util.UUID.randomUUID().toString()
-                val plan = Plan(
-                    id = id,
-                    title = title,
-                    markdownItinerary = summary,
-                    destinationId = form.to
-                )
-                DI.repo.addPlan(plan)
-
-                _statusMessage.value = "✅ Plan generated successfully!"
-                Log.i(
-                    "ChatViewModel",
-                    "✓ Plan generation complete: $id with ${attractions.size} attractions"
-                )
-                onComplete(id)
-            } catch (e: Exception) {
-                Log.e("ChatViewModel", "Error generating plan: ${e.message}", e)
-                _statusMessage.value = "❌ Error: ${e.message}"
-                _messages.value += ChatMessage(
-                    "❌ Error generating plan: ${e.message}\n\nPlease check your internet connection and API keys.",
-                    isUser = false
-                )
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    // Chat message handler (using OpenAI)
-    fun sendMessage(text: String) {
-        _messages.value += ChatMessage(text, isUser = true)
-
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val response = generateChatResponseWithOpenAI(text)
-                _messages.value += ChatMessage(response, isUser = false)
-            } catch (e: Exception) {
-                _messages.value += ChatMessage("❌ Error: ${e.message}", isUser = false)
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    private suspend fun generateChatResponseWithOpenAI(message: String): String =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val jsonBody = JSONObject().apply {
-                    put("model", "gpt-3.5-turbo")
-                    put("messages", JSONArray().apply {
-                        put(JSONObject().apply {
-                            put("role", "system")
-                            put(
-                                "content",
-                                "You are a helpful travel assistant. Provide concise, practical travel advice and recommendations."
-                            )
-                        })
-                        put(JSONObject().apply {
-                            put("role", "user")
-                            put("content", message)
-                        })
-                    })
-                    put("max_tokens", 500)
-                    put("temperature", 0.7)
-                }
-
-                val request = Request.Builder()
-                    .url("https://api.openai.com/v1/chat/completions")
-                    .addHeader("Authorization", "Bearer $OPENAI_API_KEY")
-                    .post(jsonBody.toString().toRequestBody("application/json".toMediaType()))
-                    .build()
-
-                val response = httpClient.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val jsonResponse = JSONObject(response.body?.string() ?: "")
-                    jsonResponse.getJSONArray("choices")
-                        .getJSONObject(0)
-                        .getJSONObject("message")
-                        .getString("content")
-                } else {
-                    "❌ Error: Unable to get response from AI"
-                }
-            } catch (e: Exception) {
-                "❌ Error: ${e.message}"
-            }
-        }
-
-    // Model loading functions (keep for local model option)
+    // Manual model loading - call this explicitly when user wants to load
     fun manualLoadModel() {
-        if (isLoadingInProgress) {
-            Log.w("ChatViewModel", "Model loading already in progress")
-            return
-        }
-        Log.i("ChatViewModel", "Manual model load requested")
-        isLoadingInProgress = true
+        if (hasStartedLoading) return
+        hasStartedLoading = true
+        Log.i("ChatViewModel", "Manual model load requested...")
         autoLoadBestModel()
     }
 
+    // Call this when user opens chat tab for the first time
     fun startModelLoading() {
-        // Don't auto-load model anymore since we're using APIs
-        Log.i("ChatViewModel", "Model loading skipped - using API generation")
-        _statusMessage.value = "Ready to generate plans with AI"
+        if (!hasStartedLoading) {
+            Log.i("ChatViewModel", "Chat tab opened - starting auto model load...")
+            manualLoadModel()
+        } else {
+            Log.i("ChatViewModel", "Model loading already started")
+        }
     }
 
     private fun autoLoadBestModel() {
         viewModelScope.launch {
-            _isModelLoading.value = true
             try {
+                _isModelLoading.value = true
                 _statusMessage.value = "Scanning for AI models..."
-                delay(500)
+                delay(500) // Reduced delay
 
                 val allModels = listAvailableModels()
+                // Filter to only show Qwen models
                 val models = allModels.filter { it.name.contains("qwen", ignoreCase = true) }
                 _availableModels.value = models
 
                 if (models.isEmpty()) {
-                    _statusMessage.value = "No local models available. Using API generation."
+                    _statusMessage.value = "No Qwen models available. Please check SDK setup."
+                    Log.e("ChatViewModel", "No Qwen models found")
                     _isModelLoading.value = false
-                    isLoadingInProgress = false
                     return@launch
                 }
 
+                Log.i(
+                    "ChatViewModel",
+                    "Found ${models.size} Qwen models: ${models.map { it.name }}"
+                )
+
+                // Find the smallest/fastest model that's already downloaded
                 val downloadedModel = models.firstOrNull { it.isDownloaded }
 
                 if (downloadedModel != null) {
-                    _statusMessage.value = "Loading ${downloadedModel.name}..."
+                    Log.i("ChatViewModel", "Found downloaded model: ${downloadedModel.name}")
+                    _statusMessage.value = "Loading AI model..."
                     loadModelOptimized(downloadedModel.id)
                 } else {
-                    _statusMessage.value = "Local model not downloaded. Using API generation."
-                    _isModelLoading.value = false
-                    isLoadingInProgress = false
+                    // Auto-download and load the first available model (usually the smallest)
+                    val bestModel = models.first()
+                    Log.i("ChatViewModel", "Auto-downloading model: ${bestModel.name}")
+                    _statusMessage.value = "Downloading AI model (first time only)..."
+
+                    try {
+                        RunAnywhere.downloadModel(bestModel.id).collect { progress ->
+                            _downloadProgress.value = progress
+                            _statusMessage.value = "Downloading: ${(progress * 100).toInt()}%"
+                        }
+                        _downloadProgress.value = null
+
+                        Log.i("ChatViewModel", "Download complete, loading model...")
+                        _statusMessage.value = "Loading AI model..."
+                        delay(300) // Reduced delay
+                        loadModelOptimized(bestModel.id)
+                    } catch (e: Exception) {
+                        Log.e("ChatViewModel", "Auto-download failed: ${e.message}", e)
+                        _statusMessage.value = "Download failed. Tap settings to retry."
+                        _isModelLoading.value = false
+                    }
                 }
             } catch (e: Exception) {
-                Log.e("ChatViewModel", "Error: ${e.message}", e)
-                _statusMessage.value = "Using API generation"
-            } finally {
+                Log.e("ChatViewModel", "Error in autoLoadBestModel: ${e.message}", e)
+                _statusMessage.value = "Error loading AI: ${e.message}"
                 _isModelLoading.value = false
-                isLoadingInProgress = false
             }
         }
     }
 
     private suspend fun loadModelOptimized(modelId: String) {
-        _isModelLoading.value = true
         try {
-            _statusMessage.value = "Loading local AI model..."
-            val success = withTimeoutOrNull(60_000L) {
-                RunAnywhere.loadModel(modelId)
-            }
+            _isModelLoading.value = true
+            Log.i("ChatViewModel", "Loading model: $modelId")
+            _statusMessage.value = "Loading AI (this may take 10-30 seconds)..."
 
-            when (success) {
-                true -> {
-                    _currentModelId.value = modelId
-                    _statusMessage.value = "✅ Local model loaded!"
-                }
-                null -> _statusMessage.value = "Model load timed out. Using API generation."
-                else -> _statusMessage.value = "Failed to load local model. Using API generation."
+            val success = RunAnywhere.loadModel(modelId)
+
+            if (success) {
+                _currentModelId.value = modelId
+                _statusMessage.value = ""
+                Log.i("ChatViewModel", "✓ Model loaded successfully and ready!")
+            } else {
+                _statusMessage.value = "Failed to load model. Please restart the app."
+                Log.e("ChatViewModel", "Failed to load model (returned false)")
             }
         } catch (e: Exception) {
-            Log.e("ChatViewModel", "Error: ${e.message}", e)
-            _statusMessage.value = "Using API generation"
+            Log.e("ChatViewModel", "Error loading model: ${e.message}", e)
+            _statusMessage.value = "Error: ${e.message}"
         } finally {
             _isModelLoading.value = false
-            isLoadingInProgress = false
         }
     }
 
-    fun refreshModels() {
+    private fun loadAvailableModels() {
         viewModelScope.launch {
             try {
                 val allModels = listAvailableModels()
-                _availableModels.value = allModels.filter {
-                    it.name.contains("qwen", ignoreCase = true)
+                // Filter to only show Qwen models
+                val models = allModels.filter { it.name.contains("qwen", ignoreCase = true) }
+                _availableModels.value = models
+                _statusMessage.value = if (models.isEmpty()) {
+                    "No Qwen models available"
+                } else {
+                    "Found ${models.size} Qwen model(s)"
                 }
             } catch (e: Exception) {
-                Log.e("ChatViewModel", "Error refreshing models: ${e.message}", e)
+                _statusMessage.value = "Error: ${e.message}"
+                Log.e("ChatViewModel", "Error loading models: ${e.message}", e)
             }
         }
     }
@@ -496,6 +203,8 @@ class ChatViewModel : ViewModel() {
                 }
                 _downloadProgress.value = null
                 _statusMessage.value = "Download complete!"
+
+                // Auto-load after download
                 delay(500)
                 loadModelOptimized(modelId)
             } catch (e: Exception) {
@@ -511,6 +220,373 @@ class ChatViewModel : ViewModel() {
         }
     }
 
+    fun sendMessage(text: String) {
+        if (_currentModelId.value == null) {
+            _statusMessage.value = "AI is still loading, please wait..."
+            Log.w("ChatViewModel", "Attempted to send message without loaded model")
+            return
+        }
+
+        Log.i("ChatViewModel", "Sending message: $text")
+
+        // Add user message
+        _messages.value += ChatMessage(text, isUser = true)
+
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            try {
+                // Generate response with streaming for faster perceived speed
+                var assistantResponse = ""
+                var tokenCount = 0
+
+                RunAnywhere.generateStream(text).collect { token ->
+                    assistantResponse += token
+                    tokenCount++
+
+                    // Update UI every token for instant streaming (faster response feel)
+                    val currentMessages = _messages.value.toMutableList()
+                    if (currentMessages.lastOrNull()?.isUser == false && currentMessages.lastOrNull()?.isPlan == false) {
+                        currentMessages[currentMessages.lastIndex] =
+                            ChatMessage(assistantResponse, isUser = false)
+                    } else {
+                        currentMessages.add(ChatMessage(assistantResponse, isUser = false))
+                    }
+                    _messages.value = currentMessages
+                }
+
+                // Final update to ensure we have the complete message
+                val currentMessages = _messages.value.toMutableList()
+                if (currentMessages.lastOrNull()?.isUser == false && currentMessages.lastOrNull()?.isPlan == false) {
+                    currentMessages[currentMessages.lastIndex] =
+                        ChatMessage(assistantResponse, isUser = false)
+                    _messages.value = currentMessages
+                }
+
+                Log.i("ChatViewModel", "✓ Response generated successfully")
+            } catch (e: Exception) {
+                _messages.value += ChatMessage("Error: ${e.message}", isUser = false)
+                Log.e("ChatViewModel", "Error generating response: ${e.message}", e)
+            }
+
+            _isLoading.value = false
+        }
+    }
+
+    fun refreshModels() {
+        Log.i("ChatViewModel", "Manual refresh requested...")
+        _statusMessage.value = "Refreshing models..."
+        loadAvailableModels()
+    }
+
+    // Generate a travel plan using AI WITHOUT displaying in chatbot
+    // This is used when navigating directly to plan result screen
+    fun generatePlanDirect(form: PlanForm, onComplete: (String) -> Unit) {
+        if (_currentModelId.value == null) {
+            _statusMessage.value = "Please load the model first."
+            return
+        }
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // Ultra-concise prompt for 3x faster generation
+                val prompt =
+                    """Plan: ${form.from} → ${form.to} | ${form.nights}N | ${form.people}p | ₹${form.budget}
+                    |Start: ${form.startDate}
+                    |
+                    |Day-by-day (morning/afternoon/evening):
+                    |Hotels (name, price, rating):
+                    |Transport tips:
+                    |Must-see (top 3):
+                    |Food to try:
+                    |Budget breakdown:
+                    |Keep brief.""".trimMargin()
+
+                var aiItinerary = ""
+                var tokenCount = 0
+                val MAX_TOKENS = 300 // Limit to 300 tokens for faster generation (10-15 seconds)
+
+                RunAnywhere.generateStream(prompt).collect { token ->
+                    if (tokenCount >= MAX_TOKENS) {
+                        // Stop after 300 tokens to keep generation fast
+                        return@collect
+                    }
+                    aiItinerary += token
+                    tokenCount++
+                }
+
+                // Save plan with complete itinerary
+                val title = "${form.from} → ${form.to} (${form.nights} nights)"
+                val id = java.util.UUID.randomUUID().toString()
+                val plan = Plan(
+                    id = id,
+                    title = title,
+                    markdownItinerary = aiItinerary,
+                    destinationId = form.to
+                )
+                DI.repo.addPlan(plan)
+
+                _statusMessage.value = "Plan generated successfully!"
+                onComplete(id)
+            } catch (e: Exception) {
+                _statusMessage.value = "Error generating plan: ${e.message}"
+                Log.e("ChatViewModel", "Error generating plan: ${e.message}", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    // Generate a travel plan using AI and display it in the chatbot with unique UI
+    fun generatePlanFromForm(form: PlanForm, onComplete: (String) -> Unit) {
+        if (_currentModelId.value == null) {
+            _statusMessage.value = "Please load the model first."
+            return
+        }
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // Add form details as user message
+                val formSummary =
+                    "Plan: ${form.from} to ${form.to}, ${form.nights}N, ${form.people} people, ₹${form.budget}"
+                _messages.value += ChatMessage(formSummary, isUser = true)
+
+                // Ultra-concise prompt for 3x faster generation  
+                val prompt =
+                    """Plan: ${form.from} → ${form.to} | ${form.nights}N | ${form.people}p | ₹${form.budget}
+                    |Start: ${form.startDate}
+                    |
+                    |Day-by-day (morning/afternoon/evening):
+                    |Hotels (name, price, rating):
+                    |Transport tips:
+                    |Must-see (top 3):
+                    |Food to try:
+                    |Budget breakdown:
+                    |Keep brief.""".trimMargin()
+
+                var aiItinerary = ""
+                var tokenCount = 0
+                val MAX_TOKENS = 300 // Limit to 300 tokens for faster generation
+
+                RunAnywhere.generateStream(prompt).collect { token ->
+                    if (tokenCount >= MAX_TOKENS) {
+                        // Stop after 300 tokens
+                        return@collect
+                    }
+                    aiItinerary += token
+                    tokenCount++
+
+                    // Update UI every 3 tokens for faster visual feedback (was 5)
+                    if (tokenCount % 3 == 0) {
+                        val currentMessages = _messages.value.toMutableList()
+                        val planData = PlanDisplayData(
+                            from = form.from,
+                            to = form.to,
+                            startDate = form.startDate,
+                            nights = form.nights,
+                            people = form.people,
+                            budget = form.budget,
+                            itinerary = aiItinerary,
+                            imageUrl = null,
+                            attractions = emptyList()
+                        )
+
+                        if (currentMessages.lastOrNull()?.isPlan == true) {
+                            currentMessages[currentMessages.lastIndex] =
+                                ChatMessage("", isUser = false, isPlan = true, planData = planData)
+                        } else {
+                            currentMessages.add(
+                                ChatMessage(
+                                    "",
+                                    isUser = false,
+                                    isPlan = true,
+                                    planData = planData
+                                )
+                            )
+                        }
+                        _messages.value = currentMessages
+                    }
+                }
+
+                // Final update with complete plan
+                val title = "${form.from} → ${form.to} (${form.nights} nights)"
+                val id = java.util.UUID.randomUUID().toString()
+                val plan = Plan(
+                    id = id,
+                    title = title,
+                    markdownItinerary = aiItinerary,
+                    destinationId = form.to
+                )
+                DI.repo.addPlan(plan)
+
+                val finalPlanData = PlanDisplayData(
+                    from = form.from,
+                    to = form.to,
+                    startDate = form.startDate,
+                    nights = form.nights,
+                    people = form.people,
+                    budget = form.budget,
+                    itinerary = aiItinerary,
+                    imageUrl = null,
+                    attractions = emptyList()
+                )
+
+                val currentMessages = _messages.value.toMutableList()
+                if (currentMessages.lastOrNull()?.isPlan == true) {
+                    currentMessages[currentMessages.lastIndex] =
+                        ChatMessage("", isUser = false, isPlan = true, planData = finalPlanData)
+                    _messages.value = currentMessages
+                }
+
+                _statusMessage.value = "Plan generated successfully!"
+                onComplete(id)
+            } catch (e: Exception) {
+                _statusMessage.value = "Error generating plan: ${e.message}"
+                _messages.value += ChatMessage(
+                    "Error generating plan: ${e.message}",
+                    isUser = false
+                )
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun generatePlanWithAPIs(form: PlanForm, onComplete: (String) -> Unit) {
+        // Use the existing on-device model generation
+        // This provides better privacy and works offline
+        if (_currentModelId.value == null) {
+            _statusMessage.value = "AI model is loading, please wait..."
+            Log.w("ChatViewModel", "Attempted to generate plan without loaded model")
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            _statusMessage.value = "AI is creating your itinerary..."
+
+            try {
+                // Add form details as user message in chat
+                val formSummary =
+                    "Plan: ${form.from} to ${form.to}, ${form.nights}N, ${form.people} people, ₹${form.budget}"
+                _messages.value += ChatMessage(formSummary, isUser = true)
+
+                // Ultra-concise prompt for 3x faster generation  
+                val prompt =
+                    """Plan: ${form.from} → ${form.to} | ${form.nights}N | ${form.people}p | ₹${form.budget}
+                    |Start: ${form.startDate}
+                    |
+                    |Day-by-day (morning/afternoon/evening):
+                    |Hotels (name, price, rating):
+                    |Transport tips:
+                    |Must-see (top 3):
+                    |Food to try:
+                    |Budget breakdown:
+                    |Keep brief.""".trimMargin()
+
+                var aiItinerary = ""
+                var tokenCount = 0
+                val MAX_TOKENS = 400 // Increased to 400 for more detailed plans
+
+                _statusMessage.value = "Generating day-by-day itinerary..."
+
+                RunAnywhere.generateStream(prompt).collect { token ->
+                    if (tokenCount >= MAX_TOKENS) {
+                        return@collect
+                    }
+                    aiItinerary += token
+                    tokenCount++
+
+                    // Update UI every 5 tokens for visual feedback
+                    if (tokenCount % 5 == 0) {
+                        _statusMessage.value = "Generated ${tokenCount} words..."
+
+                        val currentMessages = _messages.value.toMutableList()
+                        val planData = PlanDisplayData(
+                            from = form.from,
+                            to = form.to,
+                            startDate = form.startDate,
+                            nights = form.nights,
+                            people = form.people,
+                            budget = form.budget,
+                            itinerary = aiItinerary,
+                            imageUrl = null,
+                            attractions = emptyList()
+                        )
+
+                        if (currentMessages.lastOrNull()?.isPlan == true) {
+                            currentMessages[currentMessages.lastIndex] =
+                                ChatMessage("", isUser = false, isPlan = true, planData = planData)
+                        } else {
+                            currentMessages.add(
+                                ChatMessage(
+                                    "",
+                                    isUser = false,
+                                    isPlan = true,
+                                    planData = planData
+                                )
+                            )
+                        }
+                        _messages.value = currentMessages
+                    }
+                }
+
+                // Save plan to repository
+                val title = "${form.from} → ${form.to} (${form.nights} nights)"
+                val id = java.util.UUID.randomUUID().toString()
+                val plan = Plan(
+                    id = id,
+                    title = title,
+                    markdownItinerary = aiItinerary,
+                    destinationId = form.to
+                )
+                DI.repo.addPlan(plan)
+
+                // Final update with complete plan in chat
+                val finalPlanData = PlanDisplayData(
+                    from = form.from,
+                    to = form.to,
+                    startDate = form.startDate,
+                    nights = form.nights,
+                    people = form.people,
+                    budget = form.budget,
+                    itinerary = aiItinerary,
+                    imageUrl = null,
+                    attractions = emptyList()
+                )
+
+                val currentMessages = _messages.value.toMutableList()
+                if (currentMessages.lastOrNull()?.isPlan == true) {
+                    currentMessages[currentMessages.lastIndex] =
+                        ChatMessage("", isUser = false, isPlan = true, planData = finalPlanData)
+                    _messages.value = currentMessages
+                }
+
+                // Add success notification message directing to My Plans
+                _messages.value += ChatMessage(
+                    "✅ Your travel plan has been created successfully!\n\n" +
+                            "📋 Go to the \"Plans\" tab at the bottom to view your complete itinerary.\n\n" +
+                            "💡 Tip: You can also like your favorite plans to access them quickly!",
+                    isUser = false
+                )
+
+                _statusMessage.value = "Plan saved! Check 'Plans' tab to view it."
+                Log.i("ChatViewModel", "✓ Plan generated and saved: $id")
+                onComplete(id)
+            } catch (e: Exception) {
+                _statusMessage.value = "Error generating plan: ${e.message}"
+                _messages.value += ChatMessage(
+                    "❌ Error generating plan: ${e.message}\n\nPlease try again.",
+                    isUser = false
+                )
+                Log.e("ChatViewModel", "Error in generatePlanWithAPIs: ${e.message}", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    // Add system/AI greeting message
     fun addSystemMessage(text: String) {
         _messages.value += ChatMessage(text, isUser = false)
     }
