@@ -34,6 +34,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.runanywhere.data.DI
@@ -56,7 +60,8 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     onOpenDestination: (String) -> Unit,
     onOpenMap: () -> Unit = {},
-    onOpenProfile: () -> Unit = {}
+    onOpenProfile: () -> Unit = {},
+    onSearch: (String) -> Unit = {}
 ) {
     val repo = remember { DI.repo }
     var query by remember { mutableStateOf(TextFieldValue("")) }
@@ -425,7 +430,16 @@ fun HomeScreen(
                                 unfocusedBorderColor = Color.Transparent,
                             ),
                             shape = RoundedCornerShape(20.dp),
-                            singleLine = true
+                            singleLine = true,
+                            // Added onSearch callback for "Enter" or IME action (Desktop/Android)
+                            keyboardOptions = KeyboardOptions.Default.copy(
+                                imeAction = ImeAction.Search
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onSearch = {
+                                    onSearch(query.text)
+                                }
+                            )
                         )
                         
                         // Search suggestions dropdown
@@ -451,6 +465,7 @@ fun HomeScreen(
                                             onClick = {
                                                 query = TextFieldValue(suggestion.name)
                                                 searchResults = emptyList()
+                                                onSearch(suggestion.name)
                                             }
                                         )
                                     }

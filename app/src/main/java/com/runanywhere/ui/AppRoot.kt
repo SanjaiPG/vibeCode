@@ -40,6 +40,9 @@ fun AppRoot() {
     // Track plan ID for editing
     var planIdToEdit by remember { mutableStateOf<String?>(null) }
 
+    // Track search query for AI-powered search
+    var searchQuery by remember { mutableStateOf<String?>(null) }
+
     // If not logged in, show login screen
     if (!isLoggedIn) {
         LoginScreen(onLoginSuccess = {
@@ -73,6 +76,23 @@ fun AppRoot() {
             .padding(padding)
             .fillMaxSize()) {
             when {
+                // Search Results Screen (AI-powered search)
+                searchQuery != null -> {
+                    SearchResultsScreen(
+                        searchQuery = searchQuery!!,
+                        onBack = {
+                            searchQuery = null
+                        },
+                        onMakePlan = { destinationName ->
+                            // Use destination name as ID for now
+                            selectedDestinationId = destinationName
+                            searchQuery = null
+                            previousRoute = AppRoute.Home.route
+                            currentRoute = AppRoute.MakePlan.route
+                        }
+                    )
+                }
+
                 currentRoute == AppRoute.Home.route -> {
                     HomeScreen(
                         onOpenDestination = { id ->
@@ -86,6 +106,12 @@ fun AppRoot() {
                         onOpenProfile = {
                             previousRoute = currentRoute
                             currentRoute = AppRoute.Profile.route
+                        },
+                        onSearch = { query ->
+                            // Trigger AI-powered search
+                            if (query.isNotBlank()) {
+                                searchQuery = query
+                            }
                         }
                     )
                 }

@@ -14,6 +14,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import com.google.gson.Gson
+import android.util.Log
 
 /**
  * API Service for fetching destination-related data from external APIs
@@ -479,45 +481,282 @@ object DestinationApiService {
             }
         }
     }
+
+    /**
+     * Search for destination details using ChatGPT API
+     * Returns complete destination information including hotels, restaurants, and attractions
+     * ALWAYS returns a result, never null - uses fallback if API fails
+     */
+    suspend fun searchDestinationWithAI(destinationQuery: String): DestinationSearchResult =
+        withContext(Dispatchers.IO) {
+            try {
+                Log.d("DestinationApiService", "Searching for: $destinationQuery")
+
+                val prompt = """
+                Provide detailed travel information for: $destinationQuery
+                
+                Format your response as JSON with this exact structure:
+                {
+                  "name": "City/Place Name",
+                  "country": "Country Name",
+                  "description": "A compelling 2-3 sentence description",
+                  "bestTimeToVisit": "Month range or season",
+                  "currency": "Currency code (e.g., USD, EUR)",
+                  "hotels": [
+                    {"name": "Hotel Name", "rating": 4.5, "priceRange": "${'$'}${'$'}${'$'}", "amenities": "Key amenities"},
+                    {"name": "Hotel Name", "rating": 4.3, "priceRange": "${'$'}${'$'}", "amenities": "Key amenities"},
+                    {"name": "Hotel Name", "rating": 4.0, "priceRange": "${'$'}", "amenities": "Key amenities"}
+                  ],
+                  "restaurants": [
+                    {"name": "Restaurant Name", "cuisine": "Cuisine Type", "rating": 4.7, "priceRange": "${'$'}${'$'}${'$'}"},
+                    {"name": "Restaurant Name", "cuisine": "Cuisine Type", "rating": 4.5, "priceRange": "${'$'}${'$'}"},
+                    {"name": "Restaurant Name", "cuisine": "Cuisine Type", "rating": 4.3, "priceRange": "${'$'}"}
+                  ],
+                  "attractions": [
+                    {"name": "Attraction Name", "description": "Brief description", "duration": "2-3 hours", "cost": "${'$'}${'$'}"},
+                    {"name": "Attraction Name", "description": "Brief description", "duration": "3-4 hours", "cost": "${'$'}${'$'}${'$'}"},
+                    {"name": "Attraction Name", "description": "Brief description", "duration": "1-2 hours", "cost": "${'$'}"}
+                  ],
+                  "tips": "2-3 essential travel tips"
+                }
+                
+                Provide ONLY the JSON, no additional text or markdown.
+            """.trimIndent()
+
+                val url = "https://api.openai.com/v1/chat/completions"
+
+                try {
+                    val response: OpenAIResponse = httpClient.post(url) {
+                        header("Authorization", "Bearer ${BuildConfig.OPENAI_API_KEY}")
+                        header(HttpHeaders.ContentType, ContentType.Application.Json)
+                        setBody(
+                            OpenAIRequest(
+                                model = "gpt-4o-mini",
+                                messages = listOf(OpenAIMessage("user", prompt)),
+                                maxTokens = 1500,
+                                temperature = 0.7
+                            )
+                        )
+                    }.body()
+
+                    var jsonResponse = response.choices.firstOrNull()?.message?.content?.trim()
+
+                    if (jsonResponse == null) {
+                        Log.e("DestinationApiService", "No response from API")
+                        return@withContext createFallbackDestination(destinationQuery)
+                    }
+
+                    Log.d("DestinationApiService", "Raw response: $jsonResponse")
+
+                    // Remove markdown code blocks if present
+                    jsonResponse = jsonResponse
+                        .removePrefix("```json")
+                        .removePrefix("```")
+                        .removeSuffix("```")
+                        .trim()
+
+                    Log.d("DestinationApiService", "Cleaned JSON: $jsonResponse")
+
+                    // Parse JSON response
+                    val gson = Gson()
+                    val result = try {
+                        gson.fromJson(jsonResponse, DestinationSearchResult::class.java)
+                    } catch (e: Exception) {
+                        Log.e("DestinationApiService", "JSON parsing failed: ${e.message}")
+                        Log.e("DestinationApiService", "Failed JSON: $jsonResponse")
+                        return@withContext createFallbackDestination(destinationQuery)
+                    }
+
+                    if (result == null) {
+                        Log.e("DestinationApiService", "Parsed result is null")
+                        return@withContext createFallbackDestination(destinationQuery)
+                    }
+
+                    Log.d(
+                        "DestinationApiService",
+                        "Parsed result: ${result.name}, ${result.country}"
+                    )
+
+                    // Fetch real image from Unsplash
+                    val imageUrl = try {
+                        getDestinationImageUrl(result.name)
+                    } catch (e: Exception) {
+                        Log.e("DestinationApiService", "Image fetch failed: ${e.message}")
+                        ""
+                    }
+
+                    return@withContext result.copy(imageUrl = imageUrl)
+
+                } catch (apiException: Exception) {
+                    Log.e(
+                        "DestinationApiService",
+                        "API call failed: ${apiException.message}",
+                        apiException
+                    )
+                    return@withContext createFallbackDestination(destinationQuery)
+                }
+
+            } catch (e: Exception) {
+                // Outermost catch - should never fail
+                e.printStackTrace()
+                Log.e(
+                    "DestinationApiService",
+                    "Unexpected error in searchDestinationWithAI: ${e.message}",
+                    e
+                )
+                return@withContext createFallbackDestination(destinationQuery)
+            }
+        }
+
+    /**
+     * Create fallback destination data when API fails
+     */
+    private suspend fun createFallbackDestination(destinationQuery: String): DestinationSearchResult {
+        Log.i("DestinationApiService", "Creating fallback data for: $destinationQuery")
+
+        return DestinationSearchResult(
+            name = destinationQuery.capitalize(),
+            country = "Various",
+            description = "Discover the beauty and culture of $destinationQuery. This destination offers incredible experiences, from historic landmarks to modern attractions, with something for every traveler.",
+            bestTimeToVisit = "Spring & Autumn (March-May, September-November)",
+            currency = "Local Currency",
+            hotels = listOf(
+                HotelSearchResult(
+                    name = "Grand Hotel ${destinationQuery.take(10)}",
+                    rating = 4.5,
+                    priceRange = "${'$'}${'$'}${'$'}",
+                    amenities = "WiFi, Pool, Spa, Restaurant"
+                ),
+                HotelSearchResult(
+                    name = "Comfort Inn ${destinationQuery.take(10)}",
+                    rating = 4.2,
+                    priceRange = "${'$'}${'$'}",
+                    amenities = "WiFi, Breakfast, Parking"
+                ),
+                HotelSearchResult(
+                    name = "Budget Stay ${destinationQuery.take(10)}",
+                    rating = 3.8,
+                    priceRange = "${'$'}",
+                    amenities = "WiFi, Basic Amenities"
+                )
+            ),
+            restaurants = listOf(
+                RestaurantSearchResult(
+                    name = "Local Cuisine House",
+                    cuisine = "Traditional Local",
+                    rating = 4.6,
+                    priceRange = "${'$'}${'$'}${'$'}"
+                ),
+                RestaurantSearchResult(
+                    name = "International Bistro",
+                    cuisine = "International",
+                    rating = 4.4,
+                    priceRange = "${'$'}${'$'}"
+                ),
+                RestaurantSearchResult(
+                    name = "Street Food Market",
+                    cuisine = "Local Street Food",
+                    rating = 4.5,
+                    priceRange = "${'$'}"
+                )
+            ),
+            attractions = listOf(
+                AttractionSearchResult(
+                    name = "Historic City Center",
+                    description = "Explore the heart of the city with stunning architecture",
+                    duration = "3-4 hours",
+                    cost = "${'$'}${'$'}"
+                ),
+                AttractionSearchResult(
+                    name = "Cultural Museum",
+                    description = "Learn about local history and traditions",
+                    duration = "2-3 hours",
+                    cost = "${'$'}${'$'}"
+                ),
+                AttractionSearchResult(
+                    name = "Scenic Viewpoint",
+                    description = "Breathtaking views of the surrounding area",
+                    duration = "1-2 hours",
+                    cost = "${'$'}"
+                )
+            ),
+            tips = "Best to visit during off-peak seasons. Learn basic local phrases. Try local cuisine. Book accommodations in advance.",
+            imageUrl = getDestinationImageUrl(destinationQuery)
+        )
+    }
+
+    // API Response Models
+    @Serializable
+    data class UnsplashResponse(
+        val results: List<UnsplashPhoto>
+    )
+
+    @Serializable
+    data class UnsplashPhoto(
+        val urls: UnsplashUrls
+    )
+
+    @Serializable
+    data class UnsplashUrls(
+        val regular: String
+    )
+
+    @Serializable
+    data class OpenAIRequest(
+        val model: String,
+        val messages: List<OpenAIMessage>,
+        val maxTokens: Int,
+        val temperature: Double
+    )
+
+    @Serializable
+    data class OpenAIMessage(
+        val role: String,
+        val content: String
+    )
+
+    @Serializable
+    data class OpenAIResponse(
+        val choices: List<OpenAIChoice>
+    )
+
+    @Serializable
+    data class OpenAIChoice(
+        val message: OpenAIMessage
+    )
+
+    // New data models for AI search results
+    data class DestinationSearchResult(
+        val name: String,
+        val country: String,
+        val description: String,
+        val bestTimeToVisit: String,
+        val currency: String,
+        val hotels: List<HotelSearchResult>,
+        val restaurants: List<RestaurantSearchResult>,
+        val attractions: List<AttractionSearchResult>,
+        val tips: String,
+        val imageUrl: String = ""
+    )
+
+    data class HotelSearchResult(
+        val name: String,
+        val rating: Double,
+        val priceRange: String,
+        val amenities: String
+    )
+
+    data class RestaurantSearchResult(
+        val name: String,
+        val cuisine: String,
+        val rating: Double,
+        val priceRange: String
+    )
+
+    data class AttractionSearchResult(
+        val name: String,
+        val description: String,
+        val duration: String,
+        val cost: String
+    )
 }
-
-// API Response Models
-@Serializable
-data class UnsplashResponse(
-    val results: List<UnsplashPhoto>
-)
-
-@Serializable
-data class UnsplashPhoto(
-    val urls: UnsplashUrls
-)
-
-@Serializable
-data class UnsplashUrls(
-    val regular: String
-)
-
-@Serializable
-data class OpenAIRequest(
-    val model: String,
-    val messages: List<OpenAIMessage>,
-    val maxTokens: Int,
-    val temperature: Double
-)
-
-@Serializable
-data class OpenAIMessage(
-    val role: String,
-    val content: String
-)
-
-@Serializable
-data class OpenAIResponse(
-    val choices: List<OpenAIChoice>
-)
-
-@Serializable
-data class OpenAIChoice(
-    val message: OpenAIMessage
-)
-
