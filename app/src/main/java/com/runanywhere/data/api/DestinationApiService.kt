@@ -16,6 +16,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import com.google.gson.Gson
 import android.util.Log
+import com.runanywhere.sdk.public.RunAnywhere
 
 /**
  * API Service for fetching destination-related data from external APIs
@@ -483,129 +484,387 @@ object DestinationApiService {
     }
 
     /**
+     * Generate destination details using RunAnywhere SDK (on-device AI)
+     * This is FASTER and works OFFLINE!
+     */
+    suspend fun generateDestinationWithRunAnywhereAI(destinationQuery: String): DestinationSearchResult =
+        withContext(Dispatchers.IO) {
+            try {
+                Log.d(
+                    "DestinationApiService",
+                    "Generating destination with RunAnywhere AI: $destinationQuery"
+                )
+
+                val prompt = """
+                Generate travel information for: $destinationQuery
+                
+                Provide details in this format:
+                
+                DESTINATION: [City Name]
+                COUNTRY: [Country Name]
+                DESCRIPTION: [2-3 engaging sentences about the destination]
+                BEST TIME: [Best months/season to visit]
+                CURRENCY: [Currency code like USD, EUR, JPY]
+                
+                HOTELS:
+                1. [Hotel Name] - Rating: [X.X] - Price: [$ or $$ format] - Amenities: [list]
+                2. [Hotel Name] - Rating: [X.X] - Price: [$ or $ format] - Amenities: [list]
+                3. [Hotel Name] - Rating: [X.X] - Price: [$ format] - Amenities: [list]
+                
+                RESTAURANTS:
+                1. [Name] - Cuisine: [Type] - Rating: [X.X] - Price: [$ symbols]
+                2. [Name] - Cuisine: [Type] - Rating: [X.X] - Price: [$ symbols]
+                3. [Name] - Cuisine: [Type] - Rating: [X.X] - Price: [$ symbols]
+                
+                ATTRACTIONS:
+                1. [Name] - [Brief description] - Duration: [X hours] - Cost: [$ symbols]
+                2. [Name] - [Brief description] - Duration: [X hours] - Cost: [$ symbols]
+                3. [Name] - [Brief description] - Duration: [X hours] - Cost: [$ symbols]
+                
+                TIPS: [2-3 essential travel tips]
+                
+                Keep it concise and informative.
+                """.trimIndent()
+
+                Log.d("DestinationApiService", "Generating with AI...")
+
+                // Generate using RunAnywhere SDK
+                var aiResponse = StringBuilder()
+                RunAnywhere.generateStream(prompt).collect { token ->
+                    aiResponse.append(token)
+                }
+
+                val fullResponse = aiResponse.toString()
+                Log.d("DestinationApiService", "AI Response length: ${fullResponse.length}")
+                Log.d("DestinationApiService", "AI Response preview: ${fullResponse.take(200)}")
+
+                // Parse the AI response
+                val result = parseAIResponse(fullResponse, destinationQuery)
+
+                Log.d(
+                    "DestinationApiService",
+                    "Parsed destination: ${result.name}, ${result.country}"
+                )
+
+                // Fetch real image from Unsplash
+                val imageUrl = try {
+                    getDestinationImageUrl(result.name)
+                } catch (e: Exception) {
+                    Log.e("DestinationApiService", "Image fetch failed: ${e.message}")
+                    ""
+                }
+
+                return@withContext result.copy(imageUrl = imageUrl)
+
+            } catch (e: Exception) {
+                Log.e(
+                    "DestinationApiService",
+                    "Error in generateDestinationWithRunAnywhereAI: ${e.message}",
+                    e
+                )
+                // Return fallback data
+                return@withContext createFallbackDestination(destinationQuery)
+            }
+        }
+
+    /**
+     * Parse AI response text into structured data
+     */
+    private fun parseAIResponse(
+        response: String,
+        destinationQuery: String
+    ): DestinationSearchResult {
+        try {
+            val lines = response.lines()
+
+            // Extract fields using regex and string matching
+            var destination = destinationQuery.capitalize()
+            var country = "Various"
+            var description = "Discover the beauty and culture of $destinationQuery."
+            var bestTime = "Spring & Autumn"
+            var currency = "Local Currency"
+            val hotels = mutableListOf<HotelSearchResult>()
+            val restaurants = mutableListOf<RestaurantSearchResult>()
+            val attractions = mutableListOf<AttractionSearchResult>()
+            var tips = "Plan ahead and book accommodations early."
+
+            var currentSection = ""
+
+            for (line in lines) {
+                val trimmedLine = line.trim()
+
+                when {
+                    trimmedLine.startsWith("DESTINATION:", ignoreCase = true) -> {
+                        destination =
+                            trimmedLine.substringAfter(":").trim().removeSurrounding("[", "]")
+                    }
+                    trimmedLine.startsWith("COUNTRY:", ignoreCase = true) -> {
+                        country = trimmedLine.substringAfter(":").trim().removeSurrounding("[", "]")
+                    }
+                    trimmedLine.startsWith("DESCRIPTION:", ignoreCase = true) -> {
+                        description =
+                            trimmedLine.substringAfter(":").trim().removeSurrounding("[", "]")
+                    }
+                    trimmedLine.startsWith("BEST TIME:", ignoreCase = true) -> {
+                        bestTime =
+                            trimmedLine.substringAfter(":").trim().removeSurrounding("[", "]")
+                    }
+                    trimmedLine.startsWith("CURRENCY:", ignoreCase = true) -> {
+                        currency =
+                            trimmedLine.substringAfter(":").trim().removeSurrounding("[", "]")
+                    }
+
+                    trimmedLine.startsWith("HOTELS:", ignoreCase = true) -> {
+                        currentSection = "hotels"
+                    }
+
+                    trimmedLine.startsWith("RESTAURANTS:", ignoreCase = true) -> {
+                        currentSection = "restaurants"
+                    }
+
+                    trimmedLine.startsWith("ATTRACTIONS:", ignoreCase = true) -> {
+                        currentSection = "attractions"
+                    }
+
+                    trimmedLine.startsWith("TIPS:", ignoreCase = true) -> {
+                        tips = trimmedLine.substringAfter(":").trim().removeSurrounding("[", "]")
+                        currentSection = "tips"
+                    }
+
+                    trimmedLine.matches(Regex("^\\d+\\..*")) -> {
+                        // Parse numbered items
+                        when (currentSection) {
+                            "hotels" -> {
+                                val hotelText = trimmedLine.substringAfter(". ")
+                                val parts = hotelText.split(" - ")
+                                if (parts.size >= 3) {
+                                    val name = parts[0].trim().removeSurrounding("[", "]")
+                                    val rating =
+                                        parts.getOrNull(1)?.substringAfter("Rating:")?.trim()
+                                            ?.removeSurrounding("[", "]")?.toDoubleOrNull() ?: 4.5
+                                    val price = parts.getOrNull(2)?.substringAfter("Price:")?.trim()
+                                        ?.removeSurrounding("[", "]") ?: "$$"
+                                    val amenities =
+                                        parts.getOrNull(3)?.substringAfter("Amenities:")?.trim()
+                                            ?.removeSurrounding("[", "]") ?: "WiFi, Restaurant"
+
+                                    hotels.add(HotelSearchResult(name, rating, price, amenities))
+                                }
+                            }
+
+                            "restaurants" -> {
+                                val restaurantText = trimmedLine.substringAfter(". ")
+                                val parts = restaurantText.split(" - ")
+                                if (parts.size >= 3) {
+                                    val name = parts[0].trim().removeSurrounding("[", "]")
+                                    val cuisine =
+                                        parts.getOrNull(1)?.substringAfter("Cuisine:")?.trim()
+                                            ?.removeSurrounding("[", "]") ?: "Local"
+                                    val rating =
+                                        parts.getOrNull(2)?.substringAfter("Rating:")?.trim()
+                                            ?.removeSurrounding("[", "]")?.toDoubleOrNull() ?: 4.5
+                                    val price = parts.getOrNull(3)?.substringAfter("Price:")?.trim()
+                                        ?.removeSurrounding("[", "]") ?: "$$"
+
+                                    restaurants.add(
+                                        RestaurantSearchResult(
+                                            name,
+                                            cuisine,
+                                            rating,
+                                            price
+                                        )
+                                    )
+                                }
+                            }
+
+                            "attractions" -> {
+                                val attractionText = trimmedLine.substringAfter(". ")
+                                val parts = attractionText.split(" - ")
+                                if (parts.size >= 3) {
+                                    val name = parts[0].trim().removeSurrounding("[", "]")
+                                    val desc =
+                                        parts.getOrNull(1)?.trim()?.removeSurrounding("[", "]")
+                                            ?: "Explore this attraction"
+                                    val duration =
+                                        parts.getOrNull(2)?.substringAfter("Duration:")?.trim()
+                                            ?.removeSurrounding("[", "]") ?: "2-3 hours"
+                                    val cost = parts.getOrNull(3)?.substringAfter("Cost:")?.trim()
+                                        ?.removeSurrounding("[", "]") ?: "$$"
+
+                                    attractions.add(
+                                        AttractionSearchResult(
+                                            name,
+                                            desc,
+                                            duration,
+                                            cost
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Ensure we have minimum data
+            if (hotels.isEmpty()) {
+                hotels.addAll(
+                    listOf(
+                        HotelSearchResult(
+                            "Grand Hotel $destination",
+                            4.5,
+                            "$$$",
+                            "WiFi, Pool, Spa"
+                        ),
+                        HotelSearchResult("Comfort Inn $destination", 4.2, "$$", "WiFi, Breakfast"),
+                        HotelSearchResult(
+                            "Budget Stay $destination",
+                            3.8,
+                            "$",
+                            "WiFi, Basic Amenities"
+                        )
+                    )
+                )
+            }
+
+            if (restaurants.isEmpty()) {
+                restaurants.addAll(
+                    listOf(
+                        RestaurantSearchResult("Local Cuisine House", "Traditional", 4.6, "$$$"),
+                        RestaurantSearchResult("International Bistro", "International", 4.4, "$$"),
+                        RestaurantSearchResult("Street Food Market", "Street Food", 4.5, "$")
+                    )
+                )
+            }
+
+            if (attractions.isEmpty()) {
+                attractions.addAll(
+                    listOf(
+                        AttractionSearchResult(
+                            "Historic City Center",
+                            "Explore the heart of the city",
+                            "3-4 hours",
+                            "$$"
+                        ),
+                        AttractionSearchResult(
+                            "Cultural Museum",
+                            "Learn about local history",
+                            "2-3 hours",
+                            "$$"
+                        ),
+                        AttractionSearchResult(
+                            "Scenic Viewpoint",
+                            "Breathtaking views",
+                            "1-2 hours",
+                            "$"
+                        )
+                    )
+                )
+            }
+
+            return DestinationSearchResult(
+                name = destination,
+                country = country,
+                description = description,
+                bestTimeToVisit = bestTime,
+                currency = currency,
+                hotels = hotels,
+                restaurants = restaurants,
+                attractions = attractions,
+                tips = tips,
+                imageUrl = ""
+            )
+
+        } catch (e: Exception) {
+            Log.e("DestinationApiService", "Error parsing AI response: ${e.message}", e)
+            return createBasicFallback(destinationQuery)
+        }
+    }
+
+    /**
+     * Create basic fallback destination data (non-suspend version)
+     */
+    private fun createBasicFallback(destinationQuery: String): DestinationSearchResult {
+        return DestinationSearchResult(
+            name = destinationQuery.capitalize(),
+            country = "Various",
+            description = "Discover the beauty and culture of $destinationQuery. This destination offers incredible experiences, from historic landmarks to modern attractions, with something for every traveler.",
+            bestTimeToVisit = "Spring & Autumn (March-May, September-November)",
+            currency = "Local Currency",
+            hotels = listOf(
+                HotelSearchResult(
+                    name = "Grand Hotel ${destinationQuery.take(10)}",
+                    rating = 4.5,
+                    priceRange = "${'$'}${'$'}${'$'}",
+                    amenities = "WiFi, Pool, Spa, Restaurant"
+                ),
+                HotelSearchResult(
+                    name = "Comfort Inn ${destinationQuery.take(10)}",
+                    rating = 4.2,
+                    priceRange = "${'$'}${'$'}",
+                    amenities = "WiFi, Breakfast, Parking"
+                ),
+                HotelSearchResult(
+                    name = "Budget Stay ${destinationQuery.take(10)}",
+                    rating = 3.8,
+                    priceRange = "${'$'}",
+                    amenities = "WiFi, Basic Amenities"
+                )
+            ),
+            restaurants = listOf(
+                RestaurantSearchResult(
+                    name = "Local Cuisine House",
+                    cuisine = "Traditional Local",
+                    rating = 4.6,
+                    priceRange = "${'$'}${'$'}${'$'}"
+                ),
+                RestaurantSearchResult(
+                    name = "International Bistro",
+                    cuisine = "International",
+                    rating = 4.4,
+                    priceRange = "${'$'}${'$'}"
+                ),
+                RestaurantSearchResult(
+                    name = "Street Food Market",
+                    cuisine = "Local Street Food",
+                    rating = 4.5,
+                    priceRange = "${'$'}"
+                )
+            ),
+            attractions = listOf(
+                AttractionSearchResult(
+                    name = "Historic City Center",
+                    description = "Explore the heart of the city with stunning architecture",
+                    duration = "3-4 hours",
+                    cost = "${'$'}${'$'}"
+                ),
+                AttractionSearchResult(
+                    name = "Cultural Museum",
+                    description = "Learn about local history and traditions",
+                    duration = "2-3 hours",
+                    cost = "${'$'}${'$'}"
+                ),
+                AttractionSearchResult(
+                    name = "Scenic Viewpoint",
+                    description = "Breathtaking views of the surrounding area",
+                    duration = "1-2 hours",
+                    cost = "${'$'}"
+                )
+            ),
+            tips = "Best to visit during off-peak seasons. Learn basic local phrases. Try local cuisine. Book accommodations in advance.",
+            imageUrl = ""
+        )
+    }
+
+    /**
      * Search for destination details using ChatGPT API
      * Returns complete destination information including hotels, restaurants, and attractions
      * ALWAYS returns a result, never null - uses fallback if API fails
      */
     suspend fun searchDestinationWithAI(destinationQuery: String): DestinationSearchResult =
         withContext(Dispatchers.IO) {
-            try {
-                Log.d("DestinationApiService", "Searching for: $destinationQuery")
-
-                val prompt = """
-                Provide detailed travel information for: $destinationQuery
-                
-                Format your response as JSON with this exact structure:
-                {
-                  "name": "City/Place Name",
-                  "country": "Country Name",
-                  "description": "A compelling 2-3 sentence description",
-                  "bestTimeToVisit": "Month range or season",
-                  "currency": "Currency code (e.g., USD, EUR)",
-                  "hotels": [
-                    {"name": "Hotel Name", "rating": 4.5, "priceRange": "${'$'}${'$'}${'$'}", "amenities": "Key amenities"},
-                    {"name": "Hotel Name", "rating": 4.3, "priceRange": "${'$'}${'$'}", "amenities": "Key amenities"},
-                    {"name": "Hotel Name", "rating": 4.0, "priceRange": "${'$'}", "amenities": "Key amenities"}
-                  ],
-                  "restaurants": [
-                    {"name": "Restaurant Name", "cuisine": "Cuisine Type", "rating": 4.7, "priceRange": "${'$'}${'$'}${'$'}"},
-                    {"name": "Restaurant Name", "cuisine": "Cuisine Type", "rating": 4.5, "priceRange": "${'$'}${'$'}"},
-                    {"name": "Restaurant Name", "cuisine": "Cuisine Type", "rating": 4.3, "priceRange": "${'$'}"}
-                  ],
-                  "attractions": [
-                    {"name": "Attraction Name", "description": "Brief description", "duration": "2-3 hours", "cost": "${'$'}${'$'}"},
-                    {"name": "Attraction Name", "description": "Brief description", "duration": "3-4 hours", "cost": "${'$'}${'$'}${'$'}"},
-                    {"name": "Attraction Name", "description": "Brief description", "duration": "1-2 hours", "cost": "${'$'}"}
-                  ],
-                  "tips": "2-3 essential travel tips"
-                }
-                
-                Provide ONLY the JSON, no additional text or markdown.
-            """.trimIndent()
-
-                val url = "https://api.openai.com/v1/chat/completions"
-
-                try {
-                    val response: OpenAIResponse = httpClient.post(url) {
-                        header("Authorization", "Bearer ${BuildConfig.OPENAI_API_KEY}")
-                        header(HttpHeaders.ContentType, ContentType.Application.Json)
-                        setBody(
-                            OpenAIRequest(
-                                model = "gpt-4o-mini",
-                                messages = listOf(OpenAIMessage("user", prompt)),
-                                maxTokens = 1500,
-                                temperature = 0.7
-                            )
-                        )
-                    }.body()
-
-                    var jsonResponse = response.choices.firstOrNull()?.message?.content?.trim()
-
-                    if (jsonResponse == null) {
-                        Log.e("DestinationApiService", "No response from API")
-                        return@withContext createFallbackDestination(destinationQuery)
-                    }
-
-                    Log.d("DestinationApiService", "Raw response: $jsonResponse")
-
-                    // Remove markdown code blocks if present
-                    jsonResponse = jsonResponse
-                        .removePrefix("```json")
-                        .removePrefix("```")
-                        .removeSuffix("```")
-                        .trim()
-
-                    Log.d("DestinationApiService", "Cleaned JSON: $jsonResponse")
-
-                    // Parse JSON response
-                    val gson = Gson()
-                    val result = try {
-                        gson.fromJson(jsonResponse, DestinationSearchResult::class.java)
-                    } catch (e: Exception) {
-                        Log.e("DestinationApiService", "JSON parsing failed: ${e.message}")
-                        Log.e("DestinationApiService", "Failed JSON: $jsonResponse")
-                        return@withContext createFallbackDestination(destinationQuery)
-                    }
-
-                    if (result == null) {
-                        Log.e("DestinationApiService", "Parsed result is null")
-                        return@withContext createFallbackDestination(destinationQuery)
-                    }
-
-                    Log.d(
-                        "DestinationApiService",
-                        "Parsed result: ${result.name}, ${result.country}"
-                    )
-
-                    // Fetch real image from Unsplash
-                    val imageUrl = try {
-                        getDestinationImageUrl(result.name)
-                    } catch (e: Exception) {
-                        Log.e("DestinationApiService", "Image fetch failed: ${e.message}")
-                        ""
-                    }
-
-                    return@withContext result.copy(imageUrl = imageUrl)
-
-                } catch (apiException: Exception) {
-                    Log.e(
-                        "DestinationApiService",
-                        "API call failed: ${apiException.message}",
-                        apiException
-                    )
-                    return@withContext createFallbackDestination(destinationQuery)
-                }
-
-            } catch (e: Exception) {
-                // Outermost catch - should never fail
-                e.printStackTrace()
-                Log.e(
-                    "DestinationApiService",
-                    "Unexpected error in searchDestinationWithAI: ${e.message}",
-                    e
-                )
-                return@withContext createFallbackDestination(destinationQuery)
-            }
+            // Use RunAnywhere SDK instead of ChatGPT API
+            return@withContext generateDestinationWithRunAnywhereAI(destinationQuery)
         }
 
     /**
