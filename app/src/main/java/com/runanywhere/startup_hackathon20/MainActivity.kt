@@ -485,6 +485,7 @@ fun ChatScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val availableModels by viewModel.availableModels.collectAsState()
     val currentModelId by viewModel.currentModelId.collectAsState()
+    val statusMessage by viewModel.statusMessage.collectAsState()
 
     var inputText by remember { mutableStateOf("") }
     var showModelSelector by remember { mutableStateOf(false) }
@@ -492,12 +493,17 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    // Auto-start model loading when chat screen opens
+    LaunchedEffect(Unit) {
+        viewModel.startModelLoading()
+    }
+
     // Show snackbar when model loads or unloads
     LaunchedEffect(currentModelId) {
         if (currentModelId != null) {
             scope.launch {
                 snackbarHostState.showSnackbar(
-                    message = "Model is already loaded",
+                    message = "AI model loaded successfully!",
                     duration = SnackbarDuration.Short
                 )
             }
@@ -514,17 +520,68 @@ fun ChatScreen(
             SimplifiedTopBar(
                 modelLoaded = currentModelId != null,
                 onSettingsClick = {
-                if (currentModelId == null) {
+                    if (currentModelId == null) {
                         scope.launch {
                             snackbarHostState.showSnackbar(
-                                message = "Please load a model from settings",
+                                message = "Loading AI model...",
                                 duration = SnackbarDuration.Short
                             )
                         }
+                        viewModel.manualLoadModel()
                     }
                     showModelSelector = !showModelSelector
                 }
             )
+
+            // Model status banner when loading or no model
+            if (statusMessage.isNotEmpty() || currentModelId == null) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = if (currentModelId == null) Color(0xFFFEF3C7) else Color(0xFFDBEAFE)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                if (currentModelId == null) "AI Model Required" else "Loading...",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (currentModelId == null) Color(0xFF92400E) else Color(
+                                    0xFF1E40AF
+                                )
+                            )
+                            Text(
+                                statusMessage.ifEmpty { "Tap 'Load AI Model' to start chatting" },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (currentModelId == null) Color(0xFF92400E) else Color(
+                                    0xFF1E40AF
+                                )
+                            )
+                        }
+
+                        if (currentModelId == null) {
+                            Button(
+                                onClick = { viewModel.manualLoadModel() },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFF59E0B)
+                                ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    "Load AI Model",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
             // Model selector dialog
             if (showModelSelector) {
@@ -562,7 +619,11 @@ fun ChatScreen(
                     ) {
                         items(messages.size) { index ->
                             val message = messages[index]
-                            ChatMessageBubble(message = message)
+                            if (message.isPlan && message.planData != null) {
+                                TravelPlanCard(planData = message.planData)
+                            } else {
+                                ChatMessageBubble(message = message)
+                            }
                         }
 
                         if (isLoading && messages.isNotEmpty()) {
@@ -601,8 +662,8 @@ fun ChatScreen(
                         if (currentModelId == null) {
                             scope.launch {
                                 snackbarHostState.showSnackbar(
-                                    message = "Please load a model from settings first",
-                                    duration = SnackbarDuration.Short
+                                    message = "Please wait for AI model to load or tap 'Load AI Model'",
+                                    duration = SnackbarDuration.Long
                                 )
                             }
                         } else {

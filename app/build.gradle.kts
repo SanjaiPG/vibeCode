@@ -17,9 +17,13 @@ android {
         versionName = "1.0"
 
 
-        buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"YOUR_GOOGLE_MAPS_API_KEY\"")
-        buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"YOUR_UNSPLASH_ACCESS_KEY\"")
-        manifestPlaceholders["MAPS_API_KEY"] = "YOUR_GOOGLE_MAPS_API_KEY"
+        // API Keys - Configured with actual keys
+        buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"AIzaSyC-bN7yczlepCanvEARrUrcWNRj52Qqnss\"")
+        buildConfigField("String", "GOOGLE_PLACES_API_KEY", "\"AIzaSyBFfBRT5hfES_Eb8jcMyBhvZyUuDLBEwiU\"")
+        buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"vnmeHmOKXg1yOV-VoeZ6dJnsYpad76DS4CHEJbNFLdo\"")
+        buildConfigField("String", "OPENAI_API_KEY", "\"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\"")
+        
+        manifestPlaceholders["MAPS_API_KEY"] = "AIzaSyC-bN7yczlepCanvEARrUrcWNRj52Qqnss"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -146,4 +150,8 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    implementation("androidx.compose.material:material-icons-extended:1.7.0-alpha07")
+
+
 }

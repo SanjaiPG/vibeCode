@@ -43,6 +43,16 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.SwapHoriz
+import com.runanywhere.startup_hackathon20.data.api.DestinationApiService
+import com.runanywhere.startup_hackathon20.data.model.*
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,6 +65,34 @@ fun HomeScreen(
     var query by remember { mutableStateOf(TextFieldValue("")) }
     val all = remember { repo.getPopularDestinations() }
     val filtered = all.filter { it.name.contains(query.text, true) || it.country.contains(query.text, true) }
+    
+    // Real-time search with online destinations
+    var searchResults by remember { mutableStateOf<List<Destination>>(emptyList()) }
+    var isSearching by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    
+    // Comparison feature
+    var selectedForComparison by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var showComparisonDialog by remember { mutableStateOf(false) }
+    
+    // Expandable cards
+    var expandedCard by remember { mutableStateOf<String?>(null) }
+    var selectedTab by remember { mutableStateOf(0) }
+    
+    // Online search when user types
+    LaunchedEffect(query.text) {
+        if (query.text.isNotEmpty() && query.text.length >= 2) {
+            isSearching = true
+            scope.launch {
+                val results = DestinationApiService.searchDestinationsOnline(query.text)
+                searchResults = results
+                isSearching = false
+            }
+        } else {
+            searchResults = emptyList()
+            isSearching = false
+        }
+    }
 
     // Use StateFlow for reactive updates
     val likedDestinations by repo.likedDestinations.collectAsState()
@@ -354,35 +392,76 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Search Bar
-                    OutlinedTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(20.dp)),
-                        placeholder = {
-                            Text(
-                                " Search destinations...",
-                                color = Color.Gray.copy(alpha = 0.6f)
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Filled.Search,
-                                contentDescription = "Search",
-                                tint = Color(0xFF0EA5E9)
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            disabledContainerColor = Color.White,
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                        ),
-                        shape = RoundedCornerShape(20.dp),
-                        singleLine = true
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(20.dp)),
+                            placeholder = {
+                                Text(
+                                    " Search destinations...",
+                                    color = Color.Gray.copy(alpha = 0.6f)
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.Search,
+                                    contentDescription = "Search",
+                                    tint = Color(0xFF0EA5E9)
+                                )
+                            },
+                            trailingIcon = {
+                                if (isSearching) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp,
+                                        color = Color(0xFF0EA5E9)
+                                    )
+                                }
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                disabledContainerColor = Color.White,
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent,
+                            ),
+                            shape = RoundedCornerShape(20.dp),
+                            singleLine = true
+                        )
+                        
+                        // Search suggestions dropdown
+                        if (searchResults.isNotEmpty() && query.text.isNotEmpty()) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 200.dp)
+                                    .padding(top = 56.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color.White
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                            ) {
+                                LazyColumn(
+                                    modifier = Modifier.padding(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    items(searchResults) { suggestion ->
+                                        SearchSuggestionItem(
+                                            destination = suggestion,
+                                            onClick = {
+                                                query = TextFieldValue(suggestion.name)
+                                                searchResults = emptyList()
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -762,7 +841,7 @@ fun HomeScreen(
                 }
             }
 
-            // Destination Cards with Blue Gradient
+            // Enhanced Destination Cards with Images, Expandable Tabs, and Comparison
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -770,146 +849,87 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 filtered.forEach { d ->
-                    Card(
-                        onClick = { onOpenDestination(d.id) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.White
-                        ),
-                        elevation = CardDefaults.cardElevation(
-                            defaultElevation = 4.dp,
-                            pressedElevation = 8.dp
-                        )
-                    ) {
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Image placeholder with blue gradient
-                                Box(
-                                    modifier = Modifier
-                                        .size(100.dp)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(
-                                            Brush.linearGradient(
-                                                colors = listOf(
-                                                    Color(0xFF0EA5E9),
-                                                    Color(0xFF3B82F6),
-                                                    Color(0xFF2563EB)
-                                                )
-                                            )
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(
-                                            d.name.take(2).uppercase(),
-                                            style = MaterialTheme.typography.headlineLarge,
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-
-                                Spacer(Modifier.width(16.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        d.name,
-                                        style = MaterialTheme.typography.titleLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1F2937)
-                                    )
-                                    Spacer(Modifier.height(6.dp))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Filled.Place,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp),
-                                            tint = Color(0xFF6B7280)
-                                        )
-                                        Text(
-                                            d.country,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = Color(0xFF6B7280)
-                                        )
-                                    }
-                                    Spacer(Modifier.height(8.dp))
-                                    Surface(
-                                        color = Color(0xFFDBEAFE),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            Text(
-                                                "",
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                            Text(
-                                                d.currencyCode,
-                                                style = MaterialTheme.typography.labelLarge,
-                                                color = Color(0xFF1E40AF),
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
-                                }
+                    EnhancedDestinationCard(
+                        destination = d,
+                        isLiked = likedDestinations.contains(d.id),
+                        isSelectedForComparison = selectedForComparison.contains(d.id),
+                        isExpanded = expandedCard == d.id,
+                        selectedTab = selectedTab,
+                        onToggleLike = {
+                            if (likedDestinations.contains(d.id)) {
+                                repo.unlikeDestination(d.id)
+                            } else {
+                                repo.likeDestination(d.id)
                             }
-
-                            // Wishlist Button in Top Right Corner
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                contentAlignment = Alignment.TopEnd
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        if (likedDestinations.contains(d.id)) {
-                                            repo.unlikeDestination(d.id)
-                                        } else {
-                                            repo.likeDestination(d.id)
-                                        }
-                                    },
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .background(
-                                            Color.White.copy(alpha = 0.95f),
-                                            CircleShape
-                                        )
-                                ) {
-                                    Icon(
-                                        if (likedDestinations.contains(d.id))
-                                            Icons.Filled.Favorite
-                                        else
-                                            Icons.Filled.FavoriteBorder,
-                                        contentDescription = "Add to Wishlist",
-                                        tint = if (likedDestinations.contains(d.id))
-                                            Color(0xFF3B82F6)
-                                        else
-                                            Color(0xFF9CA3AF),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
+                        },
+                        onToggleComparison = {
+                            selectedForComparison = if (selectedForComparison.contains(d.id)) {
+                                selectedForComparison - d.id
+                            } else {
+                                selectedForComparison + d.id
                             }
-                        }
-                    }
+                        },
+                        onExpand = {
+                            expandedCard = if (expandedCard == d.id) null else d.id
+                        },
+                        onTabSelected = { tabIndex ->
+                            selectedTab = tabIndex
+                        },
+                        onOpenDestination = { onOpenDestination(d.id) }
+                    )
                 }
             }
+            
 
             Spacer(Modifier.height(16.dp))
         }
+    }
+    
+    // Comparison Floating Action Button (outside scrollable content)
+    if (selectedForComparison.size >= 2) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            FloatingActionButton(
+                onClick = { showComparisonDialog = true },
+                containerColor = Color(0xFF0EA5E9),
+                modifier = Modifier.size(64.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Filled.SwapHoriz,
+                        contentDescription = "Compare",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text(
+                        "${selectedForComparison.size}",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+    
+    // Comparison Dialog
+    if (showComparisonDialog) {
+        ComparisonDialog(
+            destinationIds = selectedForComparison.toList(),
+            destinations = all.filter { selectedForComparison.contains(it.id) },
+            onDismiss = { showComparisonDialog = false },
+            onClear = { 
+                selectedForComparison = emptySet()
+                showComparisonDialog = false
+            }
+        )
     }
 
     // Destination Details Dialog from map marker click
@@ -2569,4 +2589,499 @@ fun ProfileDetailRow(emoji: String, label: String, value: String) {
             )
         }
     }
+}
+
+// Search Suggestion Item
+@Composable
+fun SearchSuggestionItem(
+    destination: com.runanywhere.startup_hackathon20.data.model.Destination,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = Color.White
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                Icons.Filled.Place,
+                contentDescription = null,
+                tint = Color(0xFF0EA5E9),
+                modifier = Modifier.size(24.dp)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    destination.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF1F2937)
+                )
+                Text(
+                    destination.country,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF6B7280)
+                )
+            }
+        }
+    }
+}
+
+// Enhanced Destination Card with Images, Expandable Tabs, and Comparison
+@Composable
+fun EnhancedDestinationCard(
+    destination: com.runanywhere.startup_hackathon20.data.model.Destination,
+    isLiked: Boolean,
+    isSelectedForComparison: Boolean,
+    isExpanded: Boolean,
+    selectedTab: Int,
+    onToggleLike: () -> Unit,
+    onToggleComparison: () -> Unit,
+    onExpand: () -> Unit,
+    onTabSelected: (Int) -> Unit,
+    onOpenDestination: (String) -> Unit
+) {
+    var imageUrl by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    
+    // Load image from Unsplash
+    LaunchedEffect(destination.id) {
+        scope.launch {
+            imageUrl = DestinationApiService.getDestinationImageUrl(destination.name)
+        }
+    }
+    
+    Card(
+        onClick = { onExpand() },
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 8.dp
+        )
+    ) {
+        Column {
+            // Card Header with Image
+            Box(modifier = Modifier.fillMaxWidth()) {
+                // Image or gradient placeholder
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = destination.name,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF0EA5E9),
+                                        Color(0xFF3B82F6),
+                                        Color(0xFF2563EB)
+                                    )
+                                )
+                            )
+                    ) {
+                        Text(
+                            destination.name.take(2).uppercase(),
+                            style = MaterialTheme.typography.displayMedium,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                }
+                
+                // Gradient overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.6f)
+                                )
+                            )
+                        )
+                )
+                
+                // Card details over image
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        destination.name,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        destination.country,
+                        color = Color.White.copy(alpha = 0.9f),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+                
+                // Action buttons
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Comparison checkbox
+                    IconButton(
+                        onClick = { onToggleComparison() },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                Color.White.copy(alpha = 0.9f),
+                                CircleShape
+                            )
+                    ) {
+                        Icon(
+                            if (isSelectedForComparison) Icons.Filled.Check else Icons.Filled.Add,
+                            contentDescription = if (isSelectedForComparison) "Selected for comparison" else "Select for comparison",
+                            tint = if (isSelectedForComparison) Color(0xFF0EA5E9) else Color(0xFF9CA3AF),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    
+                    // Like button
+                    IconButton(
+                        onClick = { onToggleLike() },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                Color.White.copy(alpha = 0.9f),
+                                CircleShape
+                            )
+                    ) {
+                        Icon(
+                            if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = "Like",
+                            tint = if (isLiked) Color(0xFFEF4444) else Color(0xFF9CA3AF),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+            
+            // Expandable content with tabs
+            if (isExpanded) {
+                Column {
+                    TabRow(selectedTabIndex = selectedTab) {
+                        Tab(
+                            selected = selectedTab == 0,
+                            onClick = { onTabSelected(0) }
+                        ) {
+                            Text("Overview", fontSize = 12.sp)
+                        }
+                        Tab(
+                            selected = selectedTab == 1,
+                            onClick = { onTabSelected(1) }
+                        ) {
+                            Text("Hotels", fontSize = 12.sp)
+                        }
+                        Tab(
+                            selected = selectedTab == 2,
+                            onClick = { onTabSelected(2) }
+                        ) {
+                            Text("Food", fontSize = 12.sp)
+                        }
+                        Tab(
+                            selected = selectedTab == 3,
+                            onClick = { onTabSelected(3) }
+                        ) {
+                            Text("Things To Do", fontSize = 12.sp)
+                        }
+                    }
+                    
+                    // Tab content
+                    when (selectedTab) {
+                        0 -> OverviewTabContent(destination)
+                        1 -> HotelsTabContent(destination.hotels)
+                        2 -> RestaurantsTabContent(destination.restaurants)
+                        3 -> ThingsToDoTabContent(destination.id, destination.name, destination.lat, destination.lng)
+                    }
+                }
+            } else {
+                // Expand button and open destination button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(
+                        onClick = { onExpand() },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Expand Details")
+                    }
+                    Button(
+                        onClick = { onOpenDestination(destination.id) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("View Full")
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Tab Content Composables
+@Composable
+fun OverviewTabContent(destination: com.runanywhere.startup_hackathon20.data.model.Destination) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            "About ${destination.name}",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            destination.description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFF6B7280)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFDBEAFE)
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFF0EA5E9))
+                    Text("${destination.rating}", fontWeight = FontWeight.Bold)
+                    Text("Rating", fontSize = 10.sp)
+                }
+            }
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFDCFCE7)
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("💰", fontSize = 20.sp)
+                    Text(destination.currencyCode, fontWeight = FontWeight.Bold)
+                    Text("Currency", fontSize = 10.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HotelsTabContent(hotels: List<com.runanywhere.startup_hackathon20.data.model.Hotel>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            "Hotels (${hotels.size})",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        hotels.forEach { hotel ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(hotel.imageEmoji, fontSize = 32.sp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(hotel.name, fontWeight = FontWeight.Bold)
+                        Row {
+                            Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Text("${hotel.rating}")
+                        }
+                        Text(hotel.pricePerNight, color = Color(0xFF10B981))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RestaurantsTabContent(restaurants: List<com.runanywhere.startup_hackathon20.data.model.Restaurant>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            "Restaurants (${restaurants.size})",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        restaurants.forEach { restaurant ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(restaurant.imageEmoji, fontSize = 32.sp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(restaurant.name, fontWeight = FontWeight.Bold)
+                        Text(restaurant.cuisine, fontSize = 12.sp, color = Color(0xFF6B7280))
+                        Row {
+                            Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Text("${restaurant.rating}")
+                        }
+                        Text(restaurant.priceRange, color = Color(0xFF10B981))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ThingsToDoTabContent(destinationId: String, destinationName: String, lat: Double, lng: Double) {
+    var attractions by remember { mutableStateOf<List<com.runanywhere.startup_hackathon20.data.model.Attraction>>(emptyList()) }
+    val scope = rememberCoroutineScope()
+    
+    LaunchedEffect(destinationId) {
+        scope.launch {
+            attractions = DestinationApiService.fetchAttractions(destinationName, lat, lng)
+        }
+    }
+    
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            "Things To Do (${attractions.size})",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        attractions.forEach { attraction ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    AsyncImage(
+                        model = attraction.imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(attraction.name, fontWeight = FontWeight.Bold)
+                        Row {
+                            Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Text("${attraction.rating}")
+                        }
+                        Text("⏱️ ${attraction.duration}", fontSize = 12.sp)
+                        Text("💵 ${attraction.estimatedCost}", fontSize = 12.sp, color = Color(0xFF10B981))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Comparison Dialog
+@Composable
+fun ComparisonDialog(
+    destinationIds: List<String>,
+    destinations: List<com.runanywhere.startup_hackathon20.data.model.Destination>,
+    onDismiss: () -> Unit,
+    onClear: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Compare Destinations (${destinations.size})")
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                destinations.forEach { dest ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(dest.name, fontWeight = FontWeight.Bold)
+                            Text(dest.country)
+                            Row {
+                                Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Text("${dest.rating}")
+                            }
+                            Text("Currency: ${dest.currencyCode}")
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Close")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onClear) {
+                Text("Clear All")
+            }
+        }
+    )
 }

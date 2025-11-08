@@ -65,8 +65,12 @@ class ChatViewModel : ViewModel() {
 
     // Call this when user opens chat tab for the first time
     fun startModelLoading() {
-        // Removed auto-loading - now requires manual trigger
-        Log.i("ChatViewModel", "Chat tab opened - waiting for manual model load...")
+        if (!hasStartedLoading) {
+            Log.i("ChatViewModel", "Chat tab opened - starting auto model load...")
+            manualLoadModel()
+        } else {
+            Log.i("ChatViewModel", "Model loading already started")
+        }
     }
 
     private fun autoLoadBestModel() {

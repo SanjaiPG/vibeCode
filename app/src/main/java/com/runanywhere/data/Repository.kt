@@ -219,12 +219,32 @@ class Repository {
                 reviewCount = 15234,
                 description = "The City of Light beckons with its iconic Eiffel Tower, world-class museums, and romantic atmosphere. Stroll along the Seine, explore charming neighborhoods, and indulge in exquisite French cuisine.",
                 hotels = listOf(
-                    Hotel("Hotel Eiffel", 4.7, "€200/night", listOf("WiFi", "Breakfast", "Pool"), "🏨"),
-                    Hotel("Paris Grand", 4.9, "€350/night", listOf("WiFi", "Spa", "Restaurant"), "🏨")
+                    Hotel(
+                        "Hotel Eiffel Trocadéro",
+                        4.7,
+                        "€200/night",
+                        listOf("WiFi", "Breakfast", "City View"),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "Paris Marriott Opera",
+                        4.9,
+                        "€350/night",
+                        listOf("WiFi", "Spa", "Restaurant", "Fitness Center"),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "Hotel des Grands Boulevards",
+                        4.5,
+                        "€180/night",
+                        listOf("WiFi", "Bar", "Restaurant"),
+                        "🏨"
+                    )
                 ),
                 restaurants = listOf(
                     Restaurant("Le Jules Verne", 4.8, "French Fine Dining", "€€€€", "🍽️"),
-                    Restaurant("L'Atelier", 4.6, "Modern French", "€€€", "🍽️")
+                    Restaurant("L'Atelier Saint-Germain", 4.6, "Modern French", "€€€", "🍽️"),
+                    Restaurant("Bistrot Paul Bert", 4.4, "Traditional Bistro", "€€", "🍽️")
                 ),
                 topReviews = listOf(
                     Review("Emma", 5, "Absolutely magical! The city exceeded all expectations.", "2024-01-15", "👩"),
@@ -241,14 +261,34 @@ class Repository {
                 currencyCode = "JPY",
                 rating = 4.9,
                 reviewCount = 18567,
-                description = "Experience the perfect blend of ancient traditions and cutting-edge technology. From serene temples to neon-lit streets, Tokyo offers an unforgettable journey.",
+                description = "Experience the perfect blend of ancient traditions and cutting-edge technology. From serene temples to neon-lit streets, Tokyo offers an unforgettable journey through Japanese culture.",
                 hotels = listOf(
-                    Hotel("Tokyo Bay Hotel", 4.8, "¥25000/night", listOf("WiFi", "City View", "Gym"), "🏨"),
-                    Hotel("Shibuya Grand", 4.7, "¥30000/night", listOf("WiFi", "Restaurant", "Bar"), "🏨")
+                    Hotel(
+                        "The Peninsula Tokyo",
+                        4.8,
+                        "¥45000/night",
+                        listOf("WiFi", "Spa", "Imperial Palace View", "Fine Dining"),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "Shibuya Excel Hotel",
+                        4.7,
+                        "¥25000/night",
+                        listOf("WiFi", "City View", "Restaurant", "24h Front Desk"),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "Asakusa View Hotel",
+                        4.6,
+                        "¥18000/night",
+                        listOf("WiFi", "Traditional Design", "Temple Views"),
+                        "🏨"
+                    )
                 ),
                 restaurants = listOf(
-                    Restaurant("Sukiyabashi Jiro", 5.0, "Sushi", "¥¥¥¥", "🍣"),
-                    Restaurant("Ichiran Ramen", 4.6, "Ramen", "¥¥", "🍜")
+                    Restaurant("Sukiyabashi Jiro", 5.0, "Sushi Omakase", "¥¥¥¥", "🍣"),
+                    Restaurant("Ichiran Ramen Shibuya", 4.6, "Tonkotsu Ramen", "¥¥", "🍜"),
+                    Restaurant("Nabezo Shibuya", 4.3, "All-You-Can-Eat Shabu-shabu", "¥¥¥", "🥩")
                 ),
                 topReviews = listOf(
                     Review("Yuki", 5, "The food, culture, and hospitality are unmatched!", "2024-01-20", "👩"),
@@ -265,21 +305,213 @@ class Repository {
                 currencyCode = "IDR",
                 rating = 4.7,
                 reviewCount = 12890,
-                description = "A tropical paradise with stunning beaches, lush rice terraces, and spiritual temples. Perfect for relaxation, adventure, and cultural immersion.",
+                description = "A tropical paradise with stunning beaches, lush rice terraces, and spiritual temples. Perfect for relaxation, adventure, and cultural immersion in the Island of the Gods.",
                 hotels = listOf(
-                    Hotel("Ubud Resort", 4.8, "Rp1500000/night", listOf("Pool", "Spa", "Garden"), "🏨"),
-                    Hotel("Seminyak Beach Hotel", 4.6, "Rp2000000/night", listOf("Beach Access", "WiFi", "Bar"), "🏨")
+                    Hotel(
+                        "COMO Uma Ubud",
+                        4.8,
+                        "Rp2500000/night",
+                        listOf("Infinity Pool", "Spa", "Yoga Studio", "Tropical Garden"),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "W Bali Seminyak",
+                        4.6,
+                        "Rp3200000/night",
+                        listOf("Beach Access", "Pool Party", "Spa", "Fine Dining"),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "The Kayon Jungle Resort",
+                        4.9,
+                        "Rp1800000/night",
+                        listOf("Jungle View", "Private Pool", "Spa", "Organic Restaurant"),
+                        "🏨"
+                    )
                 ),
                 restaurants = listOf(
-                    Restaurant("Locavore", 4.9, "Contemporary Indonesian", "Rp Rp Rp", "🍽️"),
-                    Restaurant("Warung Biah Biah", 4.5, "Traditional Balinese", "Rp Rp", "🍽️")
+                    Restaurant("Locavore", 4.9, "Contemporary Indonesian", "Rp Rp Rp Rp", "🍽️"),
+                    Restaurant("Mama San", 4.5, "Pan-Asian Fusion", "Rp Rp Rp", "🍽️"),
+                    Restaurant("Warung Biah Biah", 4.6, "Traditional Balinese", "Rp Rp", "🍽️")
                 ),
                 topReviews = listOf(
                     Review("Sarah", 5, "Paradise on earth! The beaches are breathtaking.", "2024-01-22", "👩"),
                     Review("David", 4, "Great for relaxation and adventure activities.", "2024-01-19", "👨")
                 )
+            ),
+            Destination(
+                id = "newyork",
+                name = "New York",
+                country = "United States",
+                lat = 40.7128,
+                lng = -74.0060,
+                imageUrl = "",
+                currencyCode = "USD",
+                rating = 4.6,
+                reviewCount = 23456,
+                description = "The city that never sleeps offers Broadway shows, world-class museums, iconic landmarks, and endless dining options. Experience the energy of Manhattan and explore diverse neighborhoods.",
+                hotels = listOf(
+                    Hotel(
+                        "The Plaza",
+                        4.8,
+                        "$450/night",
+                        listOf("Luxury", "Central Park View", "Spa", "Fine Dining"),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "Pod Hotels Times Square",
+                        4.3,
+                        "$200/night",
+                        listOf("Modern Design", "Rooftop Bar", "WiFi"),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "1 Hotels Brooklyn Bridge",
+                        4.7,
+                        "$320/night",
+                        listOf("Eco-Friendly", "Waterfront View", "Organic Restaurant"),
+                        "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant("Le Bernardin", 4.9, "French Seafood", "$$$$", "🐟"),
+                    Restaurant("Joe's Pizza", 4.4, "New York Pizza", "$", "🍕"),
+                    Restaurant("Peter Luger Steak House", 4.6, "American Steakhouse", "$$$", "🥩")
+                ),
+                topReviews = listOf(
+                    Review(
+                        "Alex",
+                        5,
+                        "Incredible energy and so much to see and do!",
+                        "2024-01-25",
+                        "👨"
+                    ),
+                    Review(
+                        "Maria",
+                        4,
+                        "Amazing city but can be overwhelming. Plan ahead!",
+                        "2024-01-23",
+                        "👩"
+                    )
+                )
+            ),
+            Destination(
+                id = "london",
+                name = "London",
+                country = "United Kingdom",
+                lat = 51.5074,
+                lng = -0.1278,
+                imageUrl = "",
+                currencyCode = "GBP",
+                rating = 4.5,
+                reviewCount = 19876,
+                description = "A perfect blend of historic charm and modern innovation. Explore royal palaces, world-class museums, charming pubs, and beautiful parks in this quintessentially British capital.",
+                hotels = listOf(
+                    Hotel(
+                        "The Savoy",
+                        4.9,
+                        "£400/night",
+                        listOf("Historic Luxury", "Thames View", "Afternoon Tea", "Spa"),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "Premier Inn London City",
+                        4.2,
+                        "£80/night",
+                        listOf("Central Location", "WiFi", "Family Rooms"),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "The Shard Hotel",
+                        4.7,
+                        "£250/night",
+                        listOf("Skyline Views", "Modern Design", "Fine Dining"),
+                        "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant("Dishoom", 4.7, "Indian Bombay Café", "££", "🍛"),
+                    Restaurant("Sketch", 4.5, "Contemporary European", "££££", "🍽️"),
+                    Restaurant("Borough Market", 4.6, "Food Market", "£", "🥪")
+                ),
+                topReviews = listOf(
+                    Review(
+                        "Oliver",
+                        5,
+                        "Rich history and fantastic museums. Love the pub culture!",
+                        "2024-01-28",
+                        "👨"
+                    ),
+                    Review(
+                        "Sophie",
+                        4,
+                        "Great city but weather can be unpredictable. Bring an umbrella!",
+                        "2024-01-26",
+                        "👩"
+                    )
+                )
+            ),
+            Destination(
+                id = "dubai",
+                name = "Dubai",
+                country = "United Arab Emirates",
+                lat = 25.2048,
+                lng = 55.2708,
+                imageUrl = "",
+                currencyCode = "AED",
+                rating = 4.7,
+                reviewCount = 16543,
+                description = "A futuristic oasis in the desert featuring towering skyscrapers, luxury shopping, pristine beaches, and world-class dining. Experience the perfect blend of tradition and innovation.",
+                hotels = listOf(
+                    Hotel(
+                        "Burj Al Arab",
+                        5.0,
+                        "AED 4500/night",
+                        listOf(
+                            "7-Star Luxury",
+                            "Private Beach",
+                            "Butler Service",
+                            "Helicopter Transfer"
+                        ),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "Atlantis The Palm",
+                        4.8,
+                        "AED 1200/night",
+                        listOf("Waterpark", "Aquarium", "Beach Access", "Multiple Restaurants"),
+                        "🏨"
+                    ),
+                    Hotel(
+                        "Jumeirah Beach Hotel",
+                        4.6,
+                        "AED 800/night",
+                        listOf("Beach Front", "Water Sports", "Spa", "Kids Club"),
+                        "🏨"
+                    )
+                ),
+                restaurants = listOf(
+                    Restaurant("Nobu Dubai", 4.8, "Japanese Fine Dining", "AED AED AED AED", "🍣"),
+                    Restaurant("Al Hadheerah", 4.5, "Traditional Emirati", "AED AED AED", "🐪"),
+                    Restaurant("La Petite Maison", 4.7, "French Mediterranean", "AED AED AED", "🍽️")
+                ),
+                topReviews = listOf(
+                    Review(
+                        "Ahmed",
+                        5,
+                        "Incredible architecture and luxury shopping. Desert safari was amazing!",
+                        "2024-01-30",
+                        "👨"
+                    ),
+                    Review(
+                        "Lisa",
+                        4,
+                        "Modern marvel but can be expensive. Book activities in advance.",
+                        "2024-01-29",
+                        "👩"
+                    )
+                )
             )
-            // Add more destinations as needed
         )
     }
 
