@@ -8,6 +8,7 @@ import com.runanywhere.sdk.public.RunAnywhere
 import com.runanywhere.sdk.data.models.SDKEnvironment
 import com.runanywhere.sdk.public.extensions.addModelFromURL
 import com.runanywhere.sdk.llm.llamacpp.LlamaCppServiceProvider
+import com.runanywhere.data.Repository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -22,6 +23,11 @@ class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         authManager = FirebaseAuthManager(applicationContext)
+
+        // Initialize Repository for persistent storage
+        Log.i("MyApp", "Initializing Repository with SharedPreferences...")
+        Repository.initialize(applicationContext)
+        Log.i("MyApp", "✓ Repository initialized successfully")
 
         Log.i("MyApp", "Application onCreate - Starting SDK initialization")
 

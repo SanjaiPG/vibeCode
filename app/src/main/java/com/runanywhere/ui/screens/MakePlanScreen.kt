@@ -24,7 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.runanywhere.startup_hackathon20.ChatViewModel
-import com.runanywhere.startup_hackathon20.data.model.PlanForm
+import com.runanywhere.data.model.PlanForm
+import com.runanywhere.data.DI
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.graphics.Brush
@@ -41,12 +42,18 @@ fun MakePlanScreen(
     destinationId: String? = null,
     planIdToEdit: String? = null,
     onPlanCreated: (String) -> Unit,
+    onNavigateToChat: (() -> Unit)? = null,
     onBack: (() -> Unit)? = null,
     vm: ChatViewModel = viewModel()
 ) {
-    val repo = remember { com.runanywhere.startup_hackathon20.data.DI.repo }
+    val repo = remember { DI.repo }
     val destination = remember(destinationId) {
         destinationId?.let { repo.getDestinationById(it) }
+    }
+
+    // Auto-start model loading when screen opens
+    LaunchedEffect(Unit) {
+        vm.startModelLoading()
     }
 
     // Check if we're in edit mode
@@ -92,7 +99,10 @@ fun MakePlanScreen(
     }
 
     val isLoading by vm.isLoading.collectAsState()
+    val isModelLoading by vm.isModelLoading.collectAsState()
     val modelLoaded by vm.currentModelId.collectAsState()
+    val statusMessage by vm.statusMessage.collectAsState()
+    val downloadProgress by vm.downloadProgress.collectAsState()
     val scrollState = rememberScrollState()
 
     val foodOptions = listOf("Veg", "Non-Veg", "Both")
@@ -729,6 +739,35 @@ fun MakePlanScreen(
                             }
                         }
 
+                        // Show status message if present
+                        if (!statusMessage.isNullOrBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                statusMessage,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = androidx.compose.ui.graphics.Color(0xFF1E3A8A)
+                            )
+                        }
+
+                        val currentProgress = downloadProgress
+                        if (currentProgress != null && currentProgress in 0f..1f && isModelLoading) {
+                            Spacer(Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = currentProgress,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(7.dp),
+                                color = androidx.compose.ui.graphics.Color(0xFF3B82F6),
+                                trackColor = androidx.compose.ui.graphics.Color(0xFFDBEAFE)
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                "${(currentProgress * 100).toInt()}% downloaded",
+                                color = androidx.compose.ui.graphics.Color(0xFF1E40AF),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+
                         androidx.compose.material3.Divider(
                             color = androidx.compose.ui.graphics.Color(0xFF93C5FD),
                             modifier = Modifier.padding(vertical = 4.dp)
@@ -743,7 +782,11 @@ fun MakePlanScreen(
 
                         // Load Model Button - Improved design
                         Button(
-                            onClick = { vm.manualLoadModel() },
+                            onClick = {
+                                android.util.Log.d("MakePlanScreen", "Load Model button clicked!")
+                                vm.manualLoadModel()
+                            },
+                            enabled = !isModelLoading,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(52.dp),
@@ -762,6 +805,36 @@ fun MakePlanScreen(
                                 "Load AI Model Now",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Show success message when model is loaded
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFDCFCE7)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("✅", fontSize = 32.sp)
+                        Column {
+                            Text(
+                                "AI Model Ready!",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF166534)
+                            )
+                            Text(
+                                "You can now generate your travel plan",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF166534).copy(alpha = 0.8f)
                             )
                         }
                     }
@@ -809,7 +882,12 @@ fun MakePlanScreen(
 
             Spacer(Modifier.height(8.dp))
 
-            // Generate Button
+            // Replace the Generate Button section in MakePlanScreen with this:
+
+// Remove the "Model Required" card section since we're using APIs now
+
+// Update the Generate Button at the bottom:
+
             Button(
                 onClick = {
                     val form = PlanForm(
@@ -820,35 +898,147 @@ fun MakePlanScreen(
                         budget = budget.toIntOrNull() ?: 50000,
                         people = people.toIntOrNull() ?: 2
                     )
-                    // Use generatePlanDirect to skip chatbot and go straight to result screen
-                    vm.generatePlanDirect(form) { id ->
-                        onPlanCreated(id)
-                        // Don't navigate to chat - the onPlanCreated will navigate to plan result
+
+                    // Use API generation (no model loading required!)
+                    vm.generatePlanWithAPIs(form) { planId ->
+                        // Navigate to chat to show the generated plan
+                        onNavigateToChat?.invoke() ?: onPlanCreated(planId)
                     }
                 },
-                enabled = !isLoading && modelLoaded != null && from.isNotBlank() && to.isNotBlank() &&
-                        transportMode.isNotBlank() && startDate.isNotBlank() && endDate.isNotBlank() && days > 0,
+                enabled = !isLoading && from.isNotBlank() && to.isNotBlank() &&
+                        transportMode.isNotBlank() && startDate.isNotBlank() &&
+                        endDate.isNotBlank() && days > 0,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = if (isLoading) Color(0xFF94A3B8) else Color(0xFF2563EB),
+                    disabledContainerColor = Color(0xFFE2E8F0)
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 8.dp
                 )
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = Color.White,
                         strokeWidth = 2.dp
                     )
                     Spacer(Modifier.width(12.dp))
+                    Text(
+                        "AI is working...",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                } else {
+                    Text(
+                        "✨",
+                        fontSize = 24.sp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Generate Plan with AI",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
                 }
-                Text(
-                    if (isLoading) "Generating..." else "✨ Generate Itinerary",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+            }
+
+// Add helpful info card above the button
+            if (!isLoading) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFDBEAFE)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("💡", fontSize = 28.sp)
+                        Column {
+                            Text(
+                                "Powered by OpenAI & Unsplash",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E40AF)
+                            )
+                            Text(
+                                "Your plan will be ready in 20-30 seconds",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF1E40AF).copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+            }
+
+// Loading indicator with status
+            if (isLoading) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFFFEF3C7)
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(40.dp),
+                                color = Color(0xFFF59E0B),
+                                strokeWidth = 4.dp
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "⚡ AI is creating your perfect itinerary...",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF92400E)
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    statusMessage,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color(0xFF92400E).copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = Color(0xFFF59E0B),
+                            trackColor = Color(0xFFFEF3C7)
+                        )
+
+                        Text(
+                            "💡 Tip: Your plan will include day-by-day activities, hotel recommendations, and budget breakdown",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF92400E).copy(alpha = 0.7f),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(24.dp))

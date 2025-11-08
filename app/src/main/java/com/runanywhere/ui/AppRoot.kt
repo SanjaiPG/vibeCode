@@ -7,12 +7,26 @@ import androidx.compose.foundation.layout.*
 import com.runanywhere.startup_hackathon20.ChatViewModel
 import com.runanywhere.startup_hackathon20.ui.navigation.*
 import com.runanywhere.startup_hackathon20.ui.screens.*
+import com.google.firebase.auth.FirebaseAuth
 
 @Suppress("unused")
 @Composable
 fun AppRoot() {
-    // Track login state
-    var isLoggedIn by remember { mutableStateOf(false) }
+    // Check if user is already authenticated with Firebase
+    val auth = remember { FirebaseAuth.getInstance() }
+    val isUserAuthenticated = auth.currentUser != null
+
+    // Track login state - check Firebase auth state on start
+    var isLoggedIn by remember { mutableStateOf(isUserAuthenticated) }
+
+    // Load user data if already authenticated
+    LaunchedEffect(isUserAuthenticated) {
+        if (isUserAuthenticated) {
+            auth.currentUser?.let { firebaseUser ->
+                com.runanywhere.data.Repository.onUserLogin(firebaseUser.uid)
+            }
+        }
+    }
 
     // Simple state-based navigator
     var currentRoute by remember { mutableStateOf(AppRoute.Home.route) }
@@ -28,7 +42,13 @@ fun AppRoot() {
 
     // If not logged in, show login screen
     if (!isLoggedIn) {
-        LoginScreen(onLoginSuccess = { isLoggedIn = true })
+        LoginScreen(onLoginSuccess = {
+            isLoggedIn = true
+            // Load user data from Firebase after successful login
+            auth.currentUser?.let { firebaseUser ->
+                com.runanywhere.data.Repository.onUserLogin(firebaseUser.uid)
+            }
+        })
         return
     }
 
@@ -89,7 +109,11 @@ fun AppRoot() {
                             currentRoute = AppRoute.Home.route
                         },
                         onLogout = {
-                            // Clear user session and return to login
+                            // Sign out from Firebase and clear user session
+                            // IMPORTANT: Clear repository data BEFORE signing out
+                            com.runanywhere.data.Repository.onUserLogout()
+                            auth.signOut()
+                            // Return to login screen
                             isLoggedIn = false
                             currentRoute = AppRoute.Home.route
                         }
@@ -145,6 +169,9 @@ fun AppRoot() {
                         onPlanCreated = { planId ->
                             planIdToEdit = null // Clear edit mode
                             currentRoute = "${AppRoute.PlanResult.base}/$planId"
+                        },
+                        onNavigateToChat = {
+                            currentRoute = AppRoute.Chat.route
                         },
                         onBack = if (previousRoute != null) {
                             {

@@ -15,7 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.runanywhere.startup_hackathon20.data.DI
+import com.runanywhere.data.DI
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

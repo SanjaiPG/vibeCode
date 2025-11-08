@@ -24,9 +24,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.runanywhere.startup_hackathon20.data.DI
-import com.runanywhere.startup_hackathon20.data.api.DestinationApiService
-import com.runanywhere.startup_hackathon20.data.model.*
+import com.runanywhere.data.DI
+import com.runanywhere.data.api.DestinationApiService
+import com.runanywhere.data.model.*
 import kotlinx.coroutines.launch
 
 @Composable
@@ -229,7 +229,7 @@ fun DestinationScreen(destinationId: String, onMakePlan: () -> Unit) {
 
             // Tab Content
             when (selectedTab) {
-                    0 -> OverviewTab(
+                0 -> OverviewTab(
                     dest = dest,
                     aiDescription = aiGeneratedDescription,
                     isLoadingDescription = isLoadingDescription,

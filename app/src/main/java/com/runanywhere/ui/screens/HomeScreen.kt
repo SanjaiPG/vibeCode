@@ -1,7 +1,7 @@
 package com.runanywhere.startup_hackathon20.ui.screens
 
 
-import com.runanywhere.startup_hackathon20.data.model.User
+import com.runanywhere.data.model.User
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -36,7 +36,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.runanywhere.startup_hackathon20.data.DI
+import com.runanywhere.data.DI
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.input.pointer.pointerInput
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -47,11 +47,8 @@ import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.SwapHoriz
-import com.runanywhere.startup_hackathon20.data.api.DestinationApiService
-import com.runanywhere.startup_hackathon20.data.model.*
+import com.runanywhere.data.api.DestinationApiService
+import com.runanywhere.data.model.*
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,14 +68,13 @@ fun HomeScreen(
     var isSearching by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     
-    // Comparison feature
-    var selectedForComparison by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var showComparisonDialog by remember { mutableStateOf(false) }
-    
     // Expandable cards
     var expandedCard by remember { mutableStateOf<String?>(null) }
     var selectedTab by remember { mutableStateOf(0) }
-    
+
+    // View More destinations state
+    var showAllDestinations by remember { mutableStateOf(false) }
+
     // Online search when user types
     LaunchedEffect(query.text) {
         if (query.text.isNotEmpty() && query.text.length >= 2) {
@@ -114,7 +110,7 @@ fun HomeScreen(
 
     // Map view state - can be: "compact" (default), "expanded"
     var mapViewState by remember { mutableStateOf("compact") }
-    var selectedDestinationOnMap by remember { mutableStateOf<com.runanywhere.startup_hackathon20.data.model.Destination?>(null) }
+    var selectedDestinationOnMap by remember { mutableStateOf<Destination?>(null) }
 
     // Center camera on first destination or world center
     val initialPosition = if (filtered.isNotEmpty()) {
@@ -842,17 +838,18 @@ fun HomeScreen(
             }
 
             // Enhanced Destination Cards with Images, Expandable Tabs, and Comparison
-            Column(
+            val showList = if (showAllDestinations) filtered else filtered.take(4)
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(min = 400.dp, max = 2000.dp)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                filtered.forEach { d ->
+                items(showList) { d ->
                     EnhancedDestinationCard(
                         destination = d,
                         isLiked = likedDestinations.contains(d.id),
-                        isSelectedForComparison = selectedForComparison.contains(d.id),
                         isExpanded = expandedCard == d.id,
                         selectedTab = selectedTab,
                         onToggleLike = {
@@ -860,13 +857,6 @@ fun HomeScreen(
                                 repo.unlikeDestination(d.id)
                             } else {
                                 repo.likeDestination(d.id)
-                            }
-                        },
-                        onToggleComparison = {
-                            selectedForComparison = if (selectedForComparison.contains(d.id)) {
-                                selectedForComparison - d.id
-                            } else {
-                                selectedForComparison + d.id
                             }
                         },
                         onExpand = {
@@ -878,6 +868,53 @@ fun HomeScreen(
                         onOpenDestination = { onOpenDestination(d.id) }
                     )
                 }
+                // View More button
+                if (!showAllDestinations && filtered.size > 4) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Button(
+                                onClick = { showAllDestinations = true },
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(
+                                        0xFF0EA5E9
+                                    )
+                                )
+                            ) {
+                                Text(
+                                    "View More Destinations",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+                // View Less button
+                if (showAllDestinations && filtered.size > 4) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            OutlinedButton(
+                                onClick = { showAllDestinations = false },
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Color(0xFF0EA5E9)
+                                )
+                            ) {
+                                Text(
+                                    "View Less",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
             }
             
 
@@ -885,52 +922,6 @@ fun HomeScreen(
         }
     }
     
-    // Comparison Floating Action Button (outside scrollable content)
-    if (selectedForComparison.size >= 2) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.BottomEnd
-        ) {
-            FloatingActionButton(
-                onClick = { showComparisonDialog = true },
-                containerColor = Color(0xFF0EA5E9),
-                modifier = Modifier.size(64.dp)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        Icons.Filled.SwapHoriz,
-                        contentDescription = "Compare",
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Text(
-                        "${selectedForComparison.size}",
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
-    
-    // Comparison Dialog
-    if (showComparisonDialog) {
-        ComparisonDialog(
-            destinationIds = selectedForComparison.toList(),
-            destinations = all.filter { selectedForComparison.contains(it.id) },
-            onDismiss = { showComparisonDialog = false },
-            onClear = { 
-                selectedForComparison = emptySet()
-                showComparisonDialog = false
-            }
-        )
-    }
 
     // Destination Details Dialog from map marker click
     if (selectedDestinationOnMap != null) {
@@ -964,7 +955,7 @@ fun MapScreen(
     val likedDestinations by repo.likedDestinations.collectAsState()
     val likedDestinationsList = likedDestinations.toList()
 
-    var selectedDestination by remember { mutableStateOf<com.runanywhere.startup_hackathon20.data.model.Destination?>(null) }
+    var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var showListView by remember { mutableStateOf(false) }
 
     // Center camera on first destination or world center
@@ -1283,7 +1274,7 @@ fun CountryHeader(country: String, count: Int) {
 
 @Composable
 fun MapDestinationCard(
-    destination: com.runanywhere.startup_hackathon20.data.model.Destination,
+    destination: Destination,
     isLiked: Boolean,
     onClick: () -> Unit,
     onToggleLike: () -> Unit
@@ -1445,7 +1436,7 @@ fun MapDestinationCard(
 
 @Composable
 fun DestinationMapCard(
-    destination: com.runanywhere.startup_hackathon20.data.model.Destination,
+    destination: Destination,
     isLiked: Boolean,
     onClick: () -> Unit
 ) {
@@ -1568,7 +1559,7 @@ fun DestinationMapCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DestinationDetailsDialog(
-    destination: com.runanywhere.startup_hackathon20.data.model.Destination,
+    destination: Destination,
     isLiked: Boolean,
     onDismiss: () -> Unit,
     onToggleLike: (String) -> Unit,
@@ -2054,6 +2045,7 @@ fun ProfileScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf("") }
     var passwordSuccess by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
     val scrollState = rememberScrollState()
 
@@ -2250,7 +2242,7 @@ fun ProfileScreen(
                             if (isEditing) {
                                 // Save changes when exiting edit mode
                                 val updatedUser =
-                                    com.runanywhere.startup_hackathon20.data.model.User(
+                                    User(
                                         username = username,
                                         name = name,
                                         email = email,
@@ -2452,15 +2444,18 @@ fun ProfileScreen(
                                     }
 
                                     else -> {
-                                        val success =
-                                            repo.updatePassword(username, oldPassword, newPassword)
-                                        if (success) {
-                                            passwordSuccess = "✅ Password updated successfully!"
-                                            oldPassword = ""
-                                            newPassword = ""
-                                            confirmPassword = ""
-                                        } else {
-                                            passwordError = "Current password is incorrect"
+                                        scope.launch {
+                                            val result =
+                                                repo.updatePassword(oldPassword, newPassword)
+                                            if (result.isSuccess) {
+                                                passwordSuccess = "✅ Password updated successfully!"
+                                                oldPassword = ""
+                                                newPassword = ""
+                                                confirmPassword = ""
+                                            } else {
+                                                passwordError = result.exceptionOrNull()?.message
+                                                    ?: "Failed to update password"
+                                            }
                                         }
                                     }
                                 }
@@ -2488,7 +2483,7 @@ fun ProfileScreen(
                 onClick = {
                     if (isEditing) {
                         // Save changes
-                        val updatedUser = com.runanywhere.startup_hackathon20.data.model.User(
+                        val updatedUser = User(
                             username = username,
                             name = name,
                             email = email,
@@ -2594,7 +2589,7 @@ fun ProfileDetailRow(emoji: String, label: String, value: String) {
 // Search Suggestion Item
 @Composable
 fun SearchSuggestionItem(
-    destination: com.runanywhere.startup_hackathon20.data.model.Destination,
+    destination: Destination,
     onClick: () -> Unit
 ) {
     Surface(
@@ -2633,16 +2628,14 @@ fun SearchSuggestionItem(
     }
 }
 
-// Enhanced Destination Card with Images, Expandable Tabs, and Comparison
+// Enhanced Destination Card with Images, Expandable Tabs
 @Composable
 fun EnhancedDestinationCard(
-    destination: com.runanywhere.startup_hackathon20.data.model.Destination,
+    destination: Destination,
     isLiked: Boolean,
-    isSelectedForComparison: Boolean,
     isExpanded: Boolean,
     selectedTab: Int,
     onToggleLike: () -> Unit,
-    onToggleComparison: () -> Unit,
     onExpand: () -> Unit,
     onTabSelected: (Int) -> Unit,
     onOpenDestination: (String) -> Unit
@@ -2744,32 +2737,13 @@ fun EnhancedDestinationCard(
                     )
                 }
                 
-                // Action buttons
+                // Like button only
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Comparison checkbox
-                    IconButton(
-                        onClick = { onToggleComparison() },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(
-                                Color.White.copy(alpha = 0.9f),
-                                CircleShape
-                            )
-                    ) {
-                        Icon(
-                            if (isSelectedForComparison) Icons.Filled.Check else Icons.Filled.Add,
-                            contentDescription = if (isSelectedForComparison) "Selected for comparison" else "Select for comparison",
-                            tint = if (isSelectedForComparison) Color(0xFF0EA5E9) else Color(0xFF9CA3AF),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    
-                    // Like button
                     IconButton(
                         onClick = { onToggleLike() },
                         modifier = Modifier
@@ -2853,7 +2827,7 @@ fun EnhancedDestinationCard(
 
 // Tab Content Composables
 @Composable
-fun OverviewTabContent(destination: com.runanywhere.startup_hackathon20.data.model.Destination) {
+fun OverviewTabContent(destination: Destination) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -2907,7 +2881,7 @@ fun OverviewTabContent(destination: com.runanywhere.startup_hackathon20.data.mod
 }
 
 @Composable
-fun HotelsTabContent(hotels: List<com.runanywhere.startup_hackathon20.data.model.Hotel>) {
+fun HotelsTabContent(hotels: List<Hotel>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -2944,7 +2918,7 @@ fun HotelsTabContent(hotels: List<com.runanywhere.startup_hackathon20.data.model
 }
 
 @Composable
-fun RestaurantsTabContent(restaurants: List<com.runanywhere.startup_hackathon20.data.model.Restaurant>) {
+fun RestaurantsTabContent(restaurants: List<Restaurant>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -2983,7 +2957,7 @@ fun RestaurantsTabContent(restaurants: List<com.runanywhere.startup_hackathon20.
 
 @Composable
 fun ThingsToDoTabContent(destinationId: String, destinationName: String, lat: Double, lng: Double) {
-    var attractions by remember { mutableStateOf<List<com.runanywhere.startup_hackathon20.data.model.Attraction>>(emptyList()) }
+    var attractions by remember { mutableStateOf<List<Attraction>>(emptyList()) }
     val scope = rememberCoroutineScope()
     
     LaunchedEffect(destinationId) {
@@ -3035,53 +3009,3 @@ fun ThingsToDoTabContent(destinationId: String, destinationName: String, lat: Do
     }
 }
 
-// Comparison Dialog
-@Composable
-fun ComparisonDialog(
-    destinationIds: List<String>,
-    destinations: List<com.runanywhere.startup_hackathon20.data.model.Destination>,
-    onDismiss: () -> Unit,
-    onClear: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text("Compare Destinations (${destinations.size})")
-        },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                destinations.forEach { dest ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(dest.name, fontWeight = FontWeight.Bold)
-                            Text(dest.country)
-                            Row {
-                                Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Text("${dest.rating}")
-                            }
-                            Text("Currency: ${dest.currencyCode}")
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("Close")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onClear) {
-                Text("Clear All")
-            }
-        }
-    )
-}

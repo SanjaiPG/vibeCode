@@ -1,4 +1,4 @@
-package com.runanywhere.startup_hackathon20.data.model
+package com.runanywhere.data.model
 
 data class Destination(
     val id: String,
@@ -62,18 +62,18 @@ data class PlanForm(
 )
 
 data class Plan(
-    val id: String,
-    val title: String,
-    val markdownItinerary: String,
-    val destinationId: String
+    var id: String = "",
+    var title: String = "",
+    var markdownItinerary: String = "",
+    var destinationId: String = ""
 )
 
 data class User(
-    val username: String,
-    val name: String,
-    val email: String,
-    val countryCode: String,
-    val phone: String
+    var username: String = "",
+    var name: String = "",
+    var email: String = "",
+    var countryCode: String = "+91",
+    var phone: String = ""
 )
 
 // New data models for enhanced features

@@ -8,7 +8,7 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.runanywhere.startup_hackathon20.data.firebase.models.*
-import com.runanywhere.startup_hackathon20.data.model.*
+import com.runanywhere.data.model.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -20,7 +20,6 @@ import kotlinx.coroutines.tasks.await
  * - users/{userId}
  * - users/{userId}/plans/{planId}
  * - users/{userId}/likedDestinations/{destinationId}
- * - destinations/{destinationId}
  */
 class FirestoreManager {
 
@@ -33,7 +32,6 @@ class FirestoreManager {
         private const val USERS_COLLECTION = "users"
         private const val PLANS_COLLECTION = "plans"
         private const val LIKED_DESTINATIONS_COLLECTION = "likedDestinations"
-        private const val DESTINATIONS_COLLECTION = "destinations"
     }
 
     // ==================== User Management ====================
@@ -59,7 +57,6 @@ class FirestoreManager {
                 "updatedAt" to FieldValue.serverTimestamp()
             )
 
-            // Use set with merge to update existing or create new
             db.collection(USERS_COLLECTION)
                 .document(user.uid)
                 .set(userData, com.google.firebase.firestore.SetOptions.merge())
@@ -122,7 +119,6 @@ class FirestoreManager {
      */
     suspend fun deleteUserData(userId: String): Result<Unit> {
         return try {
-            // Delete user's plans
             val plansSnapshot = db.collection(USERS_COLLECTION)
                 .document(userId)
                 .collection(PLANS_COLLECTION)
@@ -131,7 +127,6 @@ class FirestoreManager {
 
             plansSnapshot.documents.forEach { it.reference.delete() }
 
-            // Delete user's liked destinations
             val likedSnapshot = db.collection(USERS_COLLECTION)
                 .document(userId)
                 .collection(LIKED_DESTINATIONS_COLLECTION)
@@ -140,7 +135,6 @@ class FirestoreManager {
 
             likedSnapshot.documents.forEach { it.reference.delete() }
 
-            // Delete user document
             db.collection(USERS_COLLECTION)
                 .document(userId)
                 .delete()
@@ -154,7 +148,68 @@ class FirestoreManager {
         }
     }
 
-    // ==================== Travel Plans Management ====================
+    // ==================== Repository Helper Methods ====================
+
+    /**
+     * Get current user for Repository
+     */
+    suspend fun getCurrentUser(userId: String): User {
+        return try {
+            val snapshot = db.collection(USERS_COLLECTION)
+                .document(userId)
+                .get()
+                .await()
+
+            if (snapshot.exists()) {
+                val email = snapshot.getString("email") ?: ""
+                val displayName = snapshot.getString("displayName") ?: ""
+                val countryCode = snapshot.getString("countryCode") ?: "+91"
+                val phone = snapshot.getString("phone") ?: ""
+                val username = email.substringBefore("@").ifEmpty { email }
+
+                User(
+                    username = username,
+                    name = displayName,
+                    email = email,
+                    countryCode = countryCode,
+                    phone = phone
+                )
+            } else {
+                User(username = userId, name = "", email = "", countryCode = "+91", phone = "")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting current user", e)
+            User(username = userId, name = "", email = "", countryCode = "+91", phone = "")
+        }
+    }
+
+    /**
+     * Update user data for Repository
+     */
+    suspend fun updateUser(userId: String, user: User) {
+        try {
+            val userData = hashMapOf(
+                "username" to user.username,
+                "displayName" to user.name,
+                "email" to user.email,
+                "countryCode" to user.countryCode,
+                "phone" to user.phone,
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+
+            db.collection(USERS_COLLECTION)
+                .document(userId)
+                .update(userData as Map<String, Any>)
+                .await()
+
+            Log.d(TAG, "User updated successfully: $userId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating user", e)
+            throw e
+        }
+    }
+
+    // ==================== Plans Management ====================
 
     /**
      * Save a travel plan to Firestore
@@ -165,7 +220,7 @@ class FirestoreManager {
                 id = plan.id,
                 userId = userId,
                 title = plan.title,
-                from = "", // You'll need to add these fields to Plan model
+                from = "",
                 to = "",
                 destinationId = plan.destinationId,
                 startDate = "",
@@ -176,12 +231,12 @@ class FirestoreManager {
                 isLiked = false
             )
 
-            val docRef = db.collection(USERS_COLLECTION)
+            db.collection(USERS_COLLECTION)
                 .document(userId)
                 .collection(PLANS_COLLECTION)
                 .document(plan.id)
-
-            docRef.set(planData).await()
+                .set(planData)
+                .await()
 
             Log.d(TAG, "Plan saved: ${plan.id}")
             Result.success(plan.id)
@@ -252,6 +307,65 @@ class FirestoreManager {
     }
 
     /**
+     * Get all plans for Repository
+     */
+    suspend fun getPlans(userId: String): List<Plan> {
+        return try {
+            val snapshot = db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(PLANS_COLLECTION)
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { doc ->
+                try {
+                    Plan(
+                        id = doc.getString("id") ?: doc.id,
+                        title = doc.getString("title") ?: "",
+                        markdownItinerary = doc.getString("markdownItinerary") ?: "",
+                        destinationId = doc.getString("destinationId") ?: ""
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing plan: ${doc.id}", e)
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting plans", e)
+            emptyList()
+        }
+    }
+
+    /**
+     * Add a plan for Repository
+     */
+    suspend fun addPlan(userId: String, plan: Plan) {
+        try {
+            val planData = hashMapOf(
+                "id" to plan.id,
+                "title" to plan.title,
+                "markdownItinerary" to plan.markdownItinerary,
+                "destinationId" to plan.destinationId,
+                "isLiked" to false,
+                "createdAt" to FieldValue.serverTimestamp(),
+                "updatedAt" to FieldValue.serverTimestamp()
+            )
+
+            db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(PLANS_COLLECTION)
+                .document(plan.id)
+                .set(planData)
+                .await()
+
+            Log.d(TAG, "Plan added successfully: ${plan.id}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error adding plan", e)
+            throw e
+        }
+    }
+
+    /**
      * Delete a plan
      */
     suspend fun deletePlan(userId: String, planId: String): Result<Unit> {
@@ -272,7 +386,7 @@ class FirestoreManager {
     }
 
     /**
-     * Toggle like status of a plan
+     * Toggle plan like status
      */
     suspend fun togglePlanLike(userId: String, planId: String, isLiked: Boolean): Result<Unit> {
         return try {
@@ -291,7 +405,74 @@ class FirestoreManager {
     }
 
     /**
-     * Get liked plans as a Flow (real-time updates)
+     * Like a plan for Repository
+     */
+    suspend fun likePlan(userId: String, planId: String) {
+        try {
+            db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(PLANS_COLLECTION)
+                .document(planId)
+                .update(
+                    mapOf(
+                        "isLiked" to true,
+                        "updatedAt" to FieldValue.serverTimestamp()
+                    )
+                )
+                .await()
+
+            Log.d(TAG, "Plan liked: $planId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error liking plan", e)
+            throw e
+        }
+    }
+
+    /**
+     * Unlike a plan for Repository
+     */
+    suspend fun unlikePlan(userId: String, planId: String) {
+        try {
+            db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(PLANS_COLLECTION)
+                .document(planId)
+                .update(
+                    mapOf(
+                        "isLiked" to false,
+                        "updatedAt" to FieldValue.serverTimestamp()
+                    )
+                )
+                .await()
+
+            Log.d(TAG, "Plan unliked: $planId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error unliking plan", e)
+            throw e
+        }
+    }
+
+    /**
+     * Get liked plan IDs for Repository
+     */
+    suspend fun getLikedPlans(userId: String): Set<String> {
+        return try {
+            val snapshot = db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(PLANS_COLLECTION)
+                .whereEqualTo("isLiked", true)
+                .get()
+                .await()
+
+            snapshot.documents.map { it.id }.toSet()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting liked plans", e)
+            emptySet()
+        }
+    }
+
+    /**
+     * Get liked plans as Flow (real-time updates)
      */
     fun getLikedPlansFlow(userId: String): Flow<List<Plan>> = callbackFlow {
         val listener = db.collection(USERS_COLLECTION)
@@ -383,6 +564,24 @@ class FirestoreManager {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to check destination like status", e)
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Get liked destination IDs for Repository
+     */
+    suspend fun getLikedDestinations(userId: String): Set<String> {
+        return try {
+            val snapshot = db.collection(USERS_COLLECTION)
+                .document(userId)
+                .collection(LIKED_DESTINATIONS_COLLECTION)
+                .get()
+                .await()
+
+            snapshot.documents.map { it.id }.toSet()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting liked destinations", e)
+            emptySet()
         }
     }
 

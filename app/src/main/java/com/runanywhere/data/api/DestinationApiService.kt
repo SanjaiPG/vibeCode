@@ -1,6 +1,6 @@
-package com.runanywhere.startup_hackathon20.data.api
+package com.runanywhere.data.api
 
-import com.runanywhere.startup_hackathon20.data.model.*
+import com.runanywhere.data.model.*
 import com.runanywhere.startup_hackathon20.BuildConfig
 import io.ktor.client.*
 import io.ktor.client.call.*
