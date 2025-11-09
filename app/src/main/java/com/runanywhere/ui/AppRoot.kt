@@ -225,6 +225,10 @@ fun AppRoot() {
                             planIdToEdit = editPlanId
                             previousRoute = currentRoute
                             currentRoute = AppRoute.MakePlan.route
+                        },
+                        onBack = {
+                            // Navigate to All Plans screen after deletion
+                            currentRoute = AppRoute.AllPlans.route
                         }
                     )
                 }
