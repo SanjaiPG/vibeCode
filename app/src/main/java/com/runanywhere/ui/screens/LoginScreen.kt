@@ -21,11 +21,13 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email // <-- IMPORT EMAIL ICON
+import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -86,9 +88,15 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.primaryContainer
-                    )
+                        Color(0xFF87CEEB), // Sky blue
+                        Color(0xFFB0E0E6), // Powder blue
+                        Color(0xFFE0F4FF), // Very light blue
+                        Color(0xFFF5FAFF), // Almost white with hint of blue
+                        Color.White,        // Pure white
+                        Color.White         // Pure white continues
+                    ),
+                    startY = 0f,
+                    endY = 3000f
                 )
             )
     ) {
@@ -101,9 +109,11 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             verticalArrangement = Arrangement.Center
         ) {
             // ... (App Logo/Title is unchanged) ...
-            Text(
-                "✈️",
-                style = MaterialTheme.typography.displayLarge
+            Icon(
+                imageVector = Icons.Filled.Flight,
+                contentDescription = "Travel",
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(80.dp)
             )
             Spacer(Modifier.height(16.dp))
             Text(

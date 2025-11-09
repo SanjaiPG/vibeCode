@@ -132,31 +132,14 @@ object DestinationApiService {
     }
     
     /**
-     * Generate AI description for destination using OpenAI GPT-4o-mini
+     * Generate AI description for destination using on-device AI or fallback
      */
     suspend fun generateAIDescription(destination: String, country: String): String = withContext(Dispatchers.IO) {
-        try {
-            val prompt = "Write a comprehensive but concise (3-4 sentences) travel guide description for $destination, $country. Include: unique attractions, best time to visit, cultural highlights, and why it's worth visiting. Format: Engaging, informative, and inspiring."
-            
-            val url = "https://api.openai.com/v1/chat/completions"
-            val response: OpenAIResponse = httpClient.post(url) {
-                header("Authorization", "Bearer ${BuildConfig.OPENAI_API_KEY}")
-                header(HttpHeaders.ContentType, ContentType.Application.Json)
-                setBody(OpenAIRequest(
-                    model = "gpt-4o-mini",
-                    messages = listOf(OpenAIMessage("user", prompt)),
-                    maxTokens = 200,
-                    temperature = 0.7
-                ))
-            }.body()
-            
-            response.choices.firstOrNull()?.message?.content?.trim() ?: getFallbackDescription(destination, country)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            getFallbackDescription(destination, country)
-        }
+        // Note: OpenAI integration removed - using on-device RunAnywhere AI instead
+        // For destination descriptions, we use fallback data
+        getFallbackDescription(destination, country)
     }
-    
+
     private fun getFallbackDescription(destination: String, country: String): String {
         return """
         $destination, $country is a captivating destination that offers an incredible blend of culture, history, and natural beauty. 
@@ -441,45 +424,42 @@ object DestinationApiService {
     }
     
     /**
-     * Analyze sentiment of review text using OpenAI
+     * Analyze sentiment of review text using simple keyword analysis
      */
     suspend fun analyzeSentiment(text: String): String = withContext(Dispatchers.IO) {
-        try {
-            val prompt = "Analyze the sentiment of this review and respond with only one word: 'positive', 'negative', or 'neutral'. Review: $text"
-            
-            val url = "https://api.openai.com/v1/chat/completions"
-            val response: OpenAIResponse = httpClient.post(url) {
-                header("Authorization", "Bearer ${BuildConfig.OPENAI_API_KEY}")
-                header(HttpHeaders.ContentType, ContentType.Application.Json)
-                setBody(OpenAIRequest(
-                    model = "gpt-4o-mini",
-                    messages = listOf(OpenAIMessage("user", prompt)),
-                    maxTokens = 10,
-                    temperature = 0.3
-                ))
-            }.body()
-            
-            val sentiment = response.choices.firstOrNull()?.message?.content?.trim()?.lowercase() ?: "neutral"
-            when {
-                sentiment.contains("positive") -> "positive"
-                sentiment.contains("negative") -> "negative"
-                else -> "neutral"
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // Fallback to simple analysis
-            val positiveWords = listOf("amazing", "wonderful", "excellent", "great", "love", "perfect", "beautiful", "incredible")
-            val negativeWords = listOf("terrible", "awful", "bad", "disappointing", "horrible", "worst", "hate")
-            
-            val lowerText = text.lowercase()
-            val positiveCount = positiveWords.count { lowerText.contains(it) }
-            val negativeCount = negativeWords.count { lowerText.contains(it) }
-            
-            when {
-                positiveCount > negativeCount -> "positive"
-                negativeCount > positiveCount -> "negative"
-                else -> "neutral"
-            }
+        // Note: OpenAI integration removed - using keyword-based sentiment analysis
+        val positiveWords = listOf(
+            "amazing",
+            "wonderful",
+            "excellent",
+            "great",
+            "love",
+            "perfect",
+            "beautiful",
+            "incredible",
+            "fantastic",
+            "awesome"
+        )
+        val negativeWords = listOf(
+            "terrible",
+            "awful",
+            "bad",
+            "disappointing",
+            "horrible",
+            "worst",
+            "hate",
+            "poor",
+            "unpleasant"
+        )
+
+        val lowerText = text.lowercase()
+        val positiveCount = positiveWords.count { lowerText.contains(it) }
+        val negativeCount = negativeWords.count { lowerText.contains(it) }
+
+        when {
+            positiveCount > negativeCount -> "positive"
+            negativeCount > positiveCount -> "negative"
+            else -> "neutral"
         }
     }
 

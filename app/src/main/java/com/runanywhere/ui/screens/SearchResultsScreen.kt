@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -71,11 +72,28 @@ fun SearchResultsScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF87CEEB), // Sky blue
+                        Color(0xFFB0E0E6), // Powder blue
+                        Color(0xFFE0F4FF), // Very light blue
+                        Color(0xFFF5FAFF), // Almost white with hint of blue
+                        Color.White,        // Pure white
+                        Color.White         // Pure white continues
+                    ),
+                    startY = 0f,
+                    endY = 3000f
+                )
+            )
+    ) {
         // Header with Back Button
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFF2563EB)
+            color = Color.Transparent
         ) {
             Row(
                 modifier = Modifier
@@ -135,12 +153,23 @@ fun SearchResultsScreen(
                             color = Color(0xFF2563EB),
                             strokeWidth = 4.dp
                         )
-                        Text(
-                            "🌍 Searching destination details...",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E293B)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Public,
+                                contentDescription = null,
+                                tint = Color(0xFF1E293B),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                "Searching destination details...",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E293B)
+                            )
+                        }
                         Text(
                             "Fetching hotels, restaurants & attractions",
                             style = MaterialTheme.typography.bodyMedium,
@@ -418,26 +447,38 @@ private fun DestinationDetailsContent(
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            color = White,
-            shadowElevation = 8.dp
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 20.dp),
+            color = Color.Transparent,
+            shadowElevation = 0.dp
         ) {
             Button(
                 onClick = onMakePlan,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp)
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .height(64.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2563EB)
+                    containerColor = Color(0xFF3B82F6)
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 8.dp,
+                    pressedElevation = 12.dp
                 )
             ) {
+                Icon(
+                    Icons.Filled.Star,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = White
+                )
+                Spacer(Modifier.width(12.dp))
                 Text(
-                    "✨ Make a Plan",
-                    style = MaterialTheme.typography.titleMedium,
+                    "Make a Plan",
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    color = White
                 )
             }
         }

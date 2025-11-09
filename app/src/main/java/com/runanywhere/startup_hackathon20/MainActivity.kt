@@ -30,6 +30,19 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Flight
+import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.NightsStay
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -269,7 +282,7 @@ fun TravelPlanCard(planData: PlanDisplayData) {
                         iconColor = Color(0xFF065F46),
                         value = planData.startDate,
                         label = "Start Date",
-                        emoji = "📅"
+                        icon = Icons.Filled.CalendarToday
                     )
 
                     // Nights Card
@@ -279,7 +292,7 @@ fun TravelPlanCard(planData: PlanDisplayData) {
                         iconColor = Color(0xFF1E40AF),
                         value = "${planData.nights}",
                         label = "Nights",
-                        emoji = "🌙"
+                        icon = Icons.Filled.NightsStay
                     )
                 }
 
@@ -296,7 +309,7 @@ fun TravelPlanCard(planData: PlanDisplayData) {
                         iconColor = Color(0xFF92400E),
                         value = "${planData.people}",
                         label = "Travelers",
-                        emoji = "👥"
+                        icon = Icons.Filled.Group
                     )
 
                     // Budget Card
@@ -306,7 +319,7 @@ fun TravelPlanCard(planData: PlanDisplayData) {
                         iconColor = Color(0xFF3730A3),
                         value = "₹${planData.budget}",
                         label = "Budget",
-                        emoji = "💰"
+                        icon = Icons.Filled.AccountBalanceWallet
                     )
                 }
 
@@ -332,7 +345,7 @@ fun TravelPlanCard(planData: PlanDisplayData) {
                 // Attraction Cards Section
                 if (planData.attractions.isNotEmpty()) {
                     Text(
-                        "✨ Top Attractions & Activities",
+                        "Top Attractions & Activities",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1F2937),
@@ -376,7 +389,7 @@ private fun DetailCard(
     iconColor: Color,
     value: String,
     label: String,
-    emoji: String
+    icon: androidx.compose.ui.graphics.vector.ImageVector
 ) {
     Card(
         modifier = modifier,
@@ -389,10 +402,11 @@ private fun DetailCard(
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                emoji,
-                style = MaterialTheme.typography.titleLarge,
-                fontSize = 24.sp
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(24.dp)
             )
             Spacer(Modifier.height(4.dp))
             Text(
@@ -424,7 +438,7 @@ class MainActivity : ComponentActivity() {
             LlamaCppModule.register()
             Log.i("MainActivity", "✓ LlamaCpp module registered successfully")
         } catch (e: Exception) {
-            Log.e("MainActivity", "❌ Failed to register LlamaCpp module: ${e.message}", e)
+            Log.e("MainActivity", " Failed to register LlamaCpp module: ${e.message}", e)
         }
 
         // 🔴 CRITICAL: Initialize RunAnywhere SDK
@@ -437,7 +451,7 @@ class MainActivity : ComponentActivity() {
                 )
                 Log.i("MainActivity", "✓ RunAnywhere SDK initialized successfully")
             } catch (e: Exception) {
-                Log.e("MainActivity", "❌ Failed to initialize SDK: ${e.message}", e)
+                Log.e("MainActivity", " Failed to initialize SDK: ${e.message}", e)
             }
         }
 
@@ -451,17 +465,21 @@ class MainActivity : ComponentActivity() {
 }
 
 // Quick reference suggestions for travel
-data class QuickReference(val icon: String, val text: String, val prompt: String)
+data class QuickReference(
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val text: String,
+    val prompt: String
+)
 
 val quickReferences = listOf(
-    QuickReference("✈️", "Plan a Trip", "I want to plan a trip"),
-    QuickReference("🏨", "Find Hotels", "Suggest hotels in Paris"),
-    QuickReference("🍜", "Local Cuisine", "What are local foods in Tokyo?"),
-    QuickReference("📍", "Top Spots", "Show me top attractions"),
-    QuickReference("💰", "Budget Tips", "How to travel on a budget?"),
-    QuickReference("📅", "Itinerary Help", "Create a 5-day itinerary"),
-    QuickReference("🗺️", "Make a Plan", "NAVIGATE_MAKE_PLAN"),
-    QuickReference("🏠", "View Destinations", "NAVIGATE_HOME")
+    QuickReference(Icons.Filled.Flight, "Plan a Trip", "I want to plan a trip"),
+    QuickReference(Icons.Filled.Hotel, "Find Hotels", "Suggest hotels in Paris"),
+    QuickReference(Icons.Filled.Restaurant, "Local Cuisine", "What are local foods in Tokyo?"),
+    QuickReference(Icons.Filled.Place, "Top Spots", "Show me top attractions"),
+    QuickReference(Icons.Filled.AttachMoney, "Budget Tips", "How to travel on a budget?"),
+    QuickReference(Icons.Filled.Schedule, "Itinerary Help", "Create a 5-day itinerary"),
+    QuickReference(Icons.Filled.Map, "Make a Plan", "NAVIGATE_MAKE_PLAN"),
+    QuickReference(Icons.Filled.Home, "View Destinations", "NAVIGATE_HOME")
 )
 
 // Chat action buttons data
@@ -1043,24 +1061,70 @@ fun ChatScreen(
     Box(
         Modifier
             .fillMaxSize()
-            .background(Color(0xFFF1F5F9))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF87CEEB), // Sky blue
+                        Color(0xFFB0E0E6), // Powder blue
+                        Color(0xFFE0F4FF), // Very light blue
+                        Color(0xFFF5FAFF), // Almost white with hint of blue
+                        Color.White,        // Pure white
+                        Color.White         // Pure white continues
+                    ),
+                    startY = 0f,
+                    endY = 3000f
+                )
+            )
     ) {
         Column(Modifier.fillMaxSize()) {
-            SimplifiedTopBar(
-                modelLoaded = currentModelId != null,
-                onSettingsClick = {
-                    if (currentModelId == null) {
-                        scope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "Loading AI model...",
-                                duration = SnackbarDuration.Short
-                            )
+            // Header integrated directly - no separate Surface
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Empty spacer to balance the layout
+                Spacer(modifier = Modifier.size(48.dp))
+
+                // Title
+                Text(
+                    "AI Travel Assistant",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    fontSize = 24.sp
+                )
+
+                // Settings button
+                Surface(
+                    onClick = {
+                        if (currentModelId == null) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = "Loading AI model...",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
+                            viewModel.manualLoadModel()
                         }
-                        viewModel.manualLoadModel()
+                        showModelSelector = !showModelSelector
+                    },
+                    modifier = Modifier.size(48.dp),
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.9f)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Filled.Settings,
+                            contentDescription = "Settings",
+                            tint = Color(0xFF3B82F6),
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
-                    showModelSelector = !showModelSelector
                 }
-            )
+            }
 
             // Model status banner when loading or no model
             if (statusMessage.isNotEmpty() || currentModelId == null) {

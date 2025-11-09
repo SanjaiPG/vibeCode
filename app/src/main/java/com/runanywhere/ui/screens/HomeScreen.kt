@@ -6,6 +6,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +26,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -160,7 +165,7 @@ fun HomeScreen(
                             position = LatLng(destination.lat, destination.lng)
                         ),
                         title = destination.name,
-                        snippet = "${destination.country} - ${destination.rating}⭐",
+                        snippet = "${destination.country} - ${destination.rating}",
                         onClick = {
                             selectedDestinationOnMap = destination
                             false
@@ -300,24 +305,30 @@ fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F9FF))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF87CEEB), // Sky blue
+                        Color(0xFFB0E0E6), // Powder blue
+                        Color(0xFFE0F4FF), // Very light blue
+                        Color(0xFFF5FAFF), // Almost white with hint of blue
+                        Color.White,        // Pure white
+                        Color.White         // Pure white continues
+                    ),
+                    startY = 0f,
+                    endY = 3000f
+                )
+            )
     ) {
-        // User Profile Section at Top with blue gradient - FIXED
+        // User Profile Section at Top with sky gradient - FIXED
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface
+            color = Color.Transparent
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF0EA5E9),
-                                Color(0xFF3B82F6)
-                            )
-                        )
-                    )
+                    .background(Color.Transparent)
             ) {
                 Row(
                     modifier = Modifier
@@ -371,19 +382,12 @@ fun HomeScreen(
         // Search Bar - FIXED
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface
+            color = Color.Transparent
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF0EA5E9),
-                                Color(0xFF3B82F6)
-                            )
-                        )
-                    )
+                    .background(Color.Transparent)
             ) {
                 Row(
                     modifier = Modifier
@@ -483,197 +487,171 @@ fun HomeScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Quick Stats Cards - Blue Theme with more cards
-            Column(
+            // Quick Stats - Circular horizontal layout integrated with sky gradient
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                // Places
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Destinations Count Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFDCFCE7)
-                        )
+                    Box(
+                        modifier = Modifier
+                            .size(70.dp)
+                            .background(
+                                Color(0xFF3B82F6).copy(alpha = 0.15f),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        Color(0xFF10B981).copy(alpha = 0.2f),
-                                        CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Filled.Place,
-                                    contentDescription = null,
-                                    tint = Color(0xFF059669),
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-                            Column {
-                                Text(
-                                    "${filtered.size}",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF065F46)
-                                )
-                                Text(
-                                    "Places",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF065F46).copy(alpha = 0.8f)
-                                )
-                            }
-                        }
+                        Icon(
+                            Icons.Filled.Place,
+                            contentDescription = null,
+                            tint = Color(0xFF3B82F6),
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
-
-                    // Wishlist Count Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFDBEAFE)
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        Color(0xFF3B82F6).copy(alpha = 0.2f),
-                                        CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Filled.Favorite,
-                                    contentDescription = null,
-                                    tint = Color(0xFF2563EB),
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-                            Column {
-                                Text(
-                                    "${likedDestinations.size}",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1E40AF)
-                                )
-                                Text(
-                                    "Saved",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF1E40AF).copy(alpha = 0.8f)
-                                )
-                            }
-                        }
+                        Text(
+                            "${filtered.size}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Text(
+                            "Places",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
 
-                // Additional Cards Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                // Saved
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Countries Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFFEF3C7)
-                        )
+                    Box(
+                        modifier = Modifier
+                            .size(70.dp)
+                            .background(
+                                Color(0xFF3B82F6).copy(alpha = 0.15f),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        Color(0xFFF59E0B).copy(alpha = 0.2f),
-                                        CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    "🌍",
-                                    fontSize = 24.sp
-                                )
-                            }
-                            Column {
-                                Text(
-                                    "${all.map { it.country }.distinct().size}",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF92400E)
-                                )
-                                Text(
-                                    "Countries",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF92400E).copy(alpha = 0.8f)
-                                )
-                            }
-                        }
+                        Icon(
+                            Icons.Filled.Favorite,
+                            contentDescription = null,
+                            tint = Color(0xFF3B82F6),
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
-
-                    // Plans Card
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFE0E7FF)
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        Color(0xFF6366F1).copy(alpha = 0.2f),
-                                        CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    "✈️",
-                                    fontSize = 24.sp
-                                )
-                            }
-                            Column {
-                                Text(
-                                    "$allPlansCount",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF3730A3)
-                                )
-                                Text(
-                                    "Plans",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF3730A3).copy(alpha = 0.8f)
-                                )
-                            }
-                        }
+                        Text(
+                            "${likedDestinations.size}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Text(
+                            "Saved",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                // Countries
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(70.dp)
+                            .background(
+                                Color(0xFF3B82F6).copy(alpha = 0.15f),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Public,
+                            contentDescription = null,
+                            tint = Color(0xFF3B82F6),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            "${all.map { it.country }.distinct().size}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Text(
+                            "Countries",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                // Plans
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(70.dp)
+                            .background(
+                                Color(0xFF3B82F6).copy(alpha = 0.15f),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Flight,
+                            contentDescription = null,
+                            tint = Color(0xFF3B82F6),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            "$allPlansCount",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        Text(
+                            "Plans",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }
@@ -852,33 +830,27 @@ fun HomeScreen(
                 }
             }
 
-            // Enhanced Destination Cards with Images, Expandable Tabs, and Comparison
+            // Enhanced Destination Cards with Images in 2-column grid
             val showList = if (showAllDestinations) filtered else filtered.take(4)
-            LazyColumn(
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 400.dp, max = 2000.dp)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(showList) { d ->
-                    EnhancedDestinationCard(
+                    CompactDestinationCard(
                         destination = d,
                         isLiked = likedDestinations.contains(d.id),
-                        isExpanded = expandedCard == d.id,
-                        selectedTab = selectedTab,
                         onToggleLike = {
                             if (likedDestinations.contains(d.id)) {
                                 repo.unlikeDestination(d.id)
                             } else {
                                 repo.likeDestination(d.id)
                             }
-                        },
-                        onExpand = {
-                            expandedCard = if (expandedCard == d.id) null else d.id
-                        },
-                        onTabSelected = { tabIndex ->
-                            selectedTab = tabIndex
                         },
                         onOpenDestination = { onOpenDestination(d.id) }
                     )
@@ -894,15 +866,15 @@ fun HomeScreen(
                                 onClick = { showAllDestinations = true },
                                 shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(
-                                        0xFF0EA5E9
-                                    )
-                                )
+                                    containerColor = Color(0xFF0EA5E9)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
-                                    "View More Destinations",
+                                    "View More",
                                     color = Color.White,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
                                 )
                             }
                         }
@@ -920,11 +892,13 @@ fun HomeScreen(
                                 shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     contentColor = Color(0xFF0EA5E9)
-                                )
+                                ),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
                                     "View Less",
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
                                 )
                             }
                         }
@@ -2020,8 +1994,15 @@ fun DestinationDetailsDialog(
                             containerColor = Color(0xFF3B82F6)
                         )
                     ) {
+                        Icon(
+                            imageVector = Icons.Filled.Flight,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
                         Text(
-                            "✈️ Make a Plan to ${destination.name}",
+                            "Make a Plan to ${destination.name}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -2067,40 +2048,35 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F9FF))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF87CEEB), // Sky blue
+                        Color(0xFFB0E0E6), // Powder blue
+                        Color(0xFFE0F4FF), // Very light blue
+                        Color(0xFFF5FAFF), // Almost white with hint of blue
+                        Color.White,        // Pure white
+                        Color.White         // Pure white continues
+                    ),
+                    startY = 0f,
+                    endY = 3000f
+                )
+            )
     ) {
-        // Profile Header with blue gradient
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface
+        // Profile Header integrated directly - no separate Surface
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF0EA5E9),
-                                Color(0xFF3B82F6)
-                            )
-                        )
-                    )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 24.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "My Profile",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            }
+            Text(
+                "My Profile",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
         }
 
         // Profile content area
@@ -2320,7 +2296,14 @@ fun ProfileScreen(
                             value = countryCode,
                             onValueChange = { countryCode = it },
                             label = { Text("Country Code") },
-                            leadingIcon = { Text("🌍", fontSize = 20.sp) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Public,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -2334,7 +2317,7 @@ fun ProfileScreen(
                             "Phone",
                             if (phone.isNotBlank()) "$countryCode $phone" else "Not set"
                         )
-                        ProfileDetailRow("🌍", "Country Code", countryCode)
+                        ProfileDetailRowWithIcon(Icons.Filled.Public, "Country Code", countryCode)
                     }
                 }
             }
@@ -2601,6 +2584,40 @@ fun ProfileDetailRow(emoji: String, label: String, value: String) {
     }
 }
 
+@Composable
+fun ProfileDetailRowWithIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = Color(0xFF6B7280),
+                fontSize = 12.sp
+            )
+            Text(
+                value,
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color(0xFF1F2937),
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
 // Search Suggestion Item
 @Composable
 fun SearchSuggestionItem(
@@ -2643,16 +2660,12 @@ fun SearchSuggestionItem(
     }
 }
 
-// Enhanced Destination Card with Images, Expandable Tabs
+// Compact Destination Card for grid layout, opens destination on click
 @Composable
-fun EnhancedDestinationCard(
+fun CompactDestinationCard(
     destination: Destination,
     isLiked: Boolean,
-    isExpanded: Boolean,
-    selectedTab: Int,
     onToggleLike: () -> Unit,
-    onExpand: () -> Unit,
-    onTabSelected: (Int) -> Unit,
     onOpenDestination: (String) -> Unit
 ) {
     var imageUrl by remember { mutableStateOf<String?>(null) }
@@ -2666,11 +2679,11 @@ fun EnhancedDestinationCard(
     }
     
     Card(
-        onClick = { onExpand() },
+        onClick = { onOpenDestination(destination.id) },
         modifier = Modifier
             .fillMaxWidth()
-            .animateContentSize(),
-        shape = RoundedCornerShape(20.dp),
+            .height(240.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
@@ -2679,162 +2692,125 @@ fun EnhancedDestinationCard(
             pressedElevation = 8.dp
         )
     ) {
-        Column {
-            // Card Header with Image
-            Box(modifier = Modifier.fillMaxWidth()) {
-                // Image or gradient placeholder
-                if (imageUrl != null) {
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = destination.name,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(
-                                        Color(0xFF0EA5E9),
-                                        Color(0xFF3B82F6),
-                                        Color(0xFF2563EB)
-                                    )
-                                )
-                            )
-                    ) {
-                        Text(
-                            destination.name.take(2).uppercase(),
-                            style = MaterialTheme.typography.displayMedium,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
-                }
-                
-                // Gradient overlay
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Image or gradient placeholder
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = destination.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
+                        .fillMaxSize()
                         .background(
-                            Brush.verticalGradient(
+                            Brush.linearGradient(
                                 colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.6f)
+                                    Color(0xFF0EA5E9),
+                                    Color(0xFF3B82F6),
+                                    Color(0xFF2563EB)
                                 )
                             )
-                        )
-                )
-                
-                // Card details over image
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(16.dp)
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        destination.name,
+                        destination.name.take(2).uppercase(),
+                        style = MaterialTheme.typography.displaySmall,
                         color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleLarge
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Gradient overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.7f)
+                            ),
+                            startY = 100f
+                        )
+                    )
+            )
+
+            // Card details over image
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            ) {
+                Text(
+                    destination.name,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 16.sp,
+                    maxLines = 1
+                )
+                Spacer(Modifier.height(4.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
                     )
                     Text(
                         destination.country,
                         color = Color.White.copy(alpha = 0.9f),
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 12.sp,
+                        maxLines = 1
                     )
                 }
-                
-                // Like button only
+                Spacer(Modifier.height(4.dp))
                 Row(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    IconButton(
-                        onClick = { onToggleLike() },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(
-                                Color.White.copy(alpha = 0.9f),
-                                CircleShape
-                            )
-                    ) {
-                        Icon(
-                            if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = "Like",
-                            tint = if (isLiked) Color(0xFFEF4444) else Color(0xFF9CA3AF),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    Icon(
+                        Icons.Filled.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFFBBF24),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        "${destination.rating}",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
-            
-            // Expandable content with tabs
-            if (isExpanded) {
-                Column {
-                    TabRow(selectedTabIndex = selectedTab) {
-                        Tab(
-                            selected = selectedTab == 0,
-                            onClick = { onTabSelected(0) }
-                        ) {
-                            Text("Overview", fontSize = 12.sp)
-                        }
-                        Tab(
-                            selected = selectedTab == 1,
-                            onClick = { onTabSelected(1) }
-                        ) {
-                            Text("Hotels", fontSize = 12.sp)
-                        }
-                        Tab(
-                            selected = selectedTab == 2,
-                            onClick = { onTabSelected(2) }
-                        ) {
-                            Text("Food", fontSize = 12.sp)
-                        }
-                        Tab(
-                            selected = selectedTab == 3,
-                            onClick = { onTabSelected(3) }
-                        ) {
-                            Text("Things To Do", fontSize = 12.sp)
-                        }
-                    }
-                    
-                    // Tab content
-                    when (selectedTab) {
-                        0 -> OverviewTabContent(destination)
-                        1 -> HotelsTabContent(destination.hotels)
-                        2 -> RestaurantsTabContent(destination.restaurants)
-                        3 -> ThingsToDoTabContent(destination.id, destination.name, destination.lat, destination.lng)
-                    }
-                }
-            } else {
-                // Expand button and open destination button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    TextButton(
-                        onClick = { onExpand() },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Expand Details")
-                    }
-                    Button(
-                        onClick = { onOpenDestination(destination.id) },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("View Full")
-                    }
-                }
+
+            // Like button in top right
+            IconButton(
+                onClick = {
+                    onToggleLike()
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(36.dp)
+            ) {
+                Icon(
+                    if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                    contentDescription = "Like",
+                    tint = if (isLiked) Color(0xFFEF4444) else Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
     }

@@ -15,6 +15,16 @@ import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.NightsStay
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -114,24 +124,31 @@ fun MakePlanScreen(
     Column(
         Modifier
             .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF87CEEB), // Sky blue
+                        Color(0xFFB0E0E6), // Powder blue
+                        Color(0xFFE0F4FF), // Very light blue
+                        Color(0xFFF5FAFF), // Almost white with hint of blue
+                        Color.White,        // Pure white
+                        Color.White         // Pure white continues
+                    ),
+                    startY = 0f,
+                    endY = 3000f
+                )
+            )
             .verticalScroll(scrollState)
     ) {
         // Header Section with Back Button
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface
+            color = Color.Transparent
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF0EA5E9),
-                                Color(0xFF3B82F6)
-                            )
-                        )
-                    )
+                    .background(Color.Transparent)
             ) {
                 Row(
                     modifier = Modifier
@@ -197,7 +214,12 @@ fun MakePlanScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("✏️", fontSize = 24.sp)
+                        Icon(
+                            imageVector = Icons.Filled.Edit,
+                            contentDescription = null,
+                            tint = Color(0xFF92400E),
+                            modifier = Modifier.size(24.dp)
+                        )
                         Column {
                             Text(
                                 "Make Corrections",
@@ -448,16 +470,18 @@ fun MakePlanScreen(
                         placeholder = { Text("Auto") },
                         leadingIcon = {
                             Icon(
-                                Icons.Filled.Home,
+                                Icons.Filled.CalendarMonth,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         },
                         trailingIcon = {
                             if (days > 0) {
-                                Text(
-                                    "📅",
-                                    style = MaterialTheme.typography.titleMedium
+                                Icon(
+                                    imageVector = Icons.Filled.CalendarMonth,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         },
@@ -483,16 +507,18 @@ fun MakePlanScreen(
                         placeholder = { Text("Auto") },
                         leadingIcon = {
                             Icon(
-                                Icons.Filled.Home,
+                                Icons.Filled.NightsStay,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         },
                         trailingIcon = {
                             if (nights > 0) {
-                                Text(
-                                    "🌙",
-                                    style = MaterialTheme.typography.titleMedium
+                                Icon(
+                                    imageVector = Icons.Filled.NightsStay,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         },
@@ -525,7 +551,12 @@ fun MakePlanScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("✅", fontSize = 20.sp)
+                        Icon(
+                            imageVector = Icons.Filled.CheckCircle,
+                            contentDescription = null,
+                            tint = Color(0xFF166534),
+                            modifier = Modifier.size(20.dp)
+                        )
                         Text(
                             "Trip duration: $days days, $nights nights",
                             style = MaterialTheme.typography.bodyMedium,
@@ -548,7 +579,12 @@ fun MakePlanScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("⚠️", fontSize = 20.sp)
+                        Icon(
+                            imageVector = Icons.Filled.Warning,
+                            contentDescription = null,
+                            tint = Color(0xFF991B1B),
+                            modifier = Modifier.size(20.dp)
+                        )
                         Text(
                             "End date must be after start date",
                             style = MaterialTheme.typography.bodyMedium,
@@ -600,9 +636,10 @@ fun MakePlanScreen(
                     readOnly = true,
                     label = { Text("Food Category") },
                     leadingIcon = {
-                        Text(
-                            "🍽️",
-                            style = MaterialTheme.typography.titleMedium
+                        Icon(
+                            imageVector = Icons.Filled.Restaurant,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     },
                     trailingIcon = {
@@ -648,9 +685,10 @@ fun MakePlanScreen(
                     readOnly = true,
                     label = { Text("Mode of Transport") },
                     leadingIcon = {
-                        Text(
-                            "🚗",
-                            style = MaterialTheme.typography.titleMedium
+                        Icon(
+                            imageVector = Icons.Filled.DirectionsCar,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     },
                     trailingIcon = {
@@ -865,12 +903,23 @@ fun MakePlanScreen(
                             strokeWidth = 4.dp
                         )
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "⚡ AI is working on your plan...",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = androidx.compose.ui.graphics.Color(0xFF92400E)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Bolt,
+                                    contentDescription = null,
+                                    tint = androidx.compose.ui.graphics.Color(0xFF92400E),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    "AI is working on your plan...",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = androidx.compose.ui.graphics.Color(0xFF92400E)
+                                )
+                            }
                             Spacer(Modifier.height(4.dp))
                             Text(
                                 "This may take 30-60 seconds on-device",
@@ -902,7 +951,12 @@ fun MakePlanScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("⚠️", fontSize = 28.sp)
+                        Icon(
+                            imageVector = Icons.Filled.Warning,
+                            contentDescription = null,
+                            tint = Color(0xFF92400E),
+                            modifier = Modifier.size(28.dp)
+                        )
                         Column {
                             Text(
                                 "Almost Ready!",
@@ -975,13 +1029,15 @@ fun MakePlanScreen(
                         color = Color.White
                     )
                 } else {
-                    Text(
-                        "✨",
-                        fontSize = 24.sp
+                    Icon(
+                        imageVector = Icons.Filled.AutoAwesome,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Generate Plan with AI",
+                        "Generate Plan",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -1003,18 +1059,18 @@ fun MakePlanScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("💡", fontSize = 28.sp)
+                        Icon(
+                            imageVector = Icons.Filled.Lightbulb,
+                            contentDescription = null,
+                            tint = Color(0xFF1E40AF),
+                            modifier = Modifier.size(28.dp)
+                        )
                         Column {
                             Text(
-                                "Powered by OpenAI & Unsplash",
+                                "Get your plan in 20-30 seconds",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF1E40AF)
-                            )
-                            Text(
-                                "Your plan will be ready in 20-30 seconds",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF1E40AF).copy(alpha = 0.8f)
                             )
                         }
                     }
@@ -1047,12 +1103,23 @@ fun MakePlanScreen(
                                 strokeWidth = 4.dp
                             )
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "⚡ AI is creating your perfect itinerary...",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF92400E)
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Bolt,
+                                        contentDescription = null,
+                                        tint = Color(0xFF92400E),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        "AI is creating your perfect itinerary...",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF92400E)
+                                    )
+                                }
                                 Spacer(Modifier.height(4.dp))
                                 Text(
                                     statusMessage,
@@ -1071,12 +1138,23 @@ fun MakePlanScreen(
                             trackColor = Color(0xFFFEF3C7)
                         )
 
-                        Text(
-                            "💡 Tip: Your plan will include day-by-day activities, hotel recommendations, and budget breakdown",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF92400E).copy(alpha = 0.7f),
-                            fontSize = 12.sp
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Lightbulb,
+                                contentDescription = null,
+                                tint = Color(0xFF92400E),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                "Your plan will include day-by-day activities, hotel recommendations, and budget breakdown",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF92400E).copy(alpha = 0.7f),
+                                fontSize = 12.sp
+                            )
+                        }
                     }
                 }
             }

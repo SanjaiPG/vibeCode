@@ -4,16 +4,16 @@ This guide explains what API keys you need and where to add them for all the enh
 
 ## 📋 Required API Keys
 
-| Feature | API Service | Free Tier | Where to Get |
-|---------|-------------|-----------|--------------|
-| **Real-time Search** | Google Places API | ✅ Yes ($200 credit/month) | [Google Cloud Console](https://console.cloud.google.com/) |
-| **Destination Images** | Unsplash API | ✅ Yes (50 requests/hour) | [Unsplash Developers](https://unsplash.com/developers) |
-| **AI Descriptions** | OpenAI GPT-4 / Google Gemini | ⚠️ Limited | [OpenAI](https://platform.openai.com/) or [Google AI Studio](https://makersuite.google.com/app/apikey) |
-| **Weather Data** | OpenWeather API | ✅ Yes (1,000 calls/day) | [OpenWeather](https://openweathermap.org/api) |
-| **Reviews** | Google Places API (Reviews) | ✅ Yes | Same as Places API |
-| **Attractions** | Google Places API | ✅ Yes | Same as Places API |
-| **Social Hashtags** | Instagram Basic Display / TikTok API | ⚠️ Limited | [Instagram](https://developers.facebook.com/) or [TikTok](https://developers.tiktok.com/) |
-| **Visa Info** | iVisaGuide API / Manual Database | ⚠️ Premium | [iVisaGuide](https://www.ivisaguide.com/api) or Custom Database |
+| Feature                | API Service                          | Free Tier                   | Where to Get                                                                              |
+|------------------------|--------------------------------------|-----------------------------|-------------------------------------------------------------------------------------------|
+| **Real-time Search**   | Google Places API                    | ✅ Yes ($200 credit/month)   | [Google Cloud Console](https://console.cloud.google.com/)                                 |
+| **Destination Images** | Unsplash API                         | ✅ Yes (50 requests/hour)    | [Unsplash Developers](https://unsplash.com/developers)                                    |
+| **AI Descriptions**    | Google Gemini                        | ✅ Yes (Free tier available) | [Google AI Studio](https://makersuite.google.com/app/apikey)                              |
+| **Weather Data**       | OpenWeather API                      | ✅ Yes (1,000 calls/day)     | [OpenWeather](https://openweathermap.org/api)                                             |
+| **Reviews**            | Google Places API (Reviews)          | ✅ Yes                       | Same as Places API                                                                        |
+| **Attractions**        | Google Places API                    | ✅ Yes                       | Same as Places API                                                                        |
+| **Social Hashtags**    | Instagram Basic Display / TikTok API | ⚠️ Limited                  | [Instagram](https://developers.facebook.com/) or [TikTok](https://developers.tiktok.com/) |
+| **Visa Info**          | iVisaGuide API / Manual Database     | ⚠️ Premium                  | [iVisaGuide](https://www.ivisaguide.com/api) or Custom Database                           |
 
 ---
 
@@ -31,8 +31,6 @@ defaultConfig {
     buildConfigField("String", "GOOGLE_PLACES_API_KEY", "\"YOUR_GOOGLE_PLACES_API_KEY\"")
     buildConfigField("String", "UNSPLASH_ACCESS_KEY", "\"YOUR_UNSPLASH_ACCESS_KEY\"")
     buildConfigField("String", "OPENWEATHER_API_KEY", "\"YOUR_OPENWEATHER_API_KEY\"")
-    buildConfigField("String", "OPENAI_API_KEY", "\"YOUR_OPENAI_API_KEY\"")
-    // OR for Google Gemini:
     buildConfigField("String", "GEMINI_API_KEY", "\"YOUR_GEMINI_API_KEY\"")
     
     manifestPlaceholders["MAPS_API_KEY"] = "YOUR_GOOGLE_MAPS_API_KEY"
@@ -127,24 +125,21 @@ suspend fun fetchWeatherAndSeasonalInfo(lat: Double, lng: Double): WeatherInfo {
 
 ---
 
-### 4. OpenAI API (for AI Descriptions)
+### 4. Google Gemini API (for AI Descriptions)
 
 **Get API Key:**
-1. Go to [OpenAI Platform](https://platform.openai.com/)
-2. Sign up or log in
-3. Go to "API Keys"
-4. Create a new secret key
+
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Create a new API key
+4. Copy the API key
 
 **Add to code:**
-- `build.gradle.kts`: `OPENAI_API_KEY`
+
+- `build.gradle.kts`: `GEMINI_API_KEY`
 - Use in `DestinationApiService.kt` for `generateAIDescription()`
 
-**Free Tier:** Limited (pay-as-you-go after free credits)
-
-**Alternative: Google Gemini (Free)**
-- Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-- Create API key
-- Use `GEMINI_API_KEY` instead
+**Free Tier:** Yes (generous free tier available)
 
 ---
 
@@ -203,15 +198,14 @@ object DestinationApiService {
     
     suspend fun generateAIDescription(destination: String, country: String): String = withContext(Dispatchers.IO) {
         try {
-            val url = "https://api.openai.com/v1/chat/completions"
+            val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${BuildConfig.GEMINI_API_KEY}"
             val response = httpClient.post(url) {
-                header("Authorization", "Bearer ${BuildConfig.OPENAI_API_KEY}")
                 header("Content-Type", "application/json")
                 setBody(mapOf(
-                    "model" to "gpt-4",
-                    "messages" to listOf(mapOf(
-                        "role" to "user",
-                        "content" to "Write a comprehensive but concise (3-4 sentences) travel guide description for $destination, $country."
+                    "contents" to listOf(mapOf(
+                        "parts" to listOf(mapOf(
+                            "text" to "Write a comprehensive but concise (3-4 sentences) travel guide description for $destination, $country."
+                        ))
                     ))
                 ))
             }
@@ -244,7 +238,7 @@ object DestinationApiService {
 3. **Restrict API keys:**
    - Google Cloud: Restrict by API and Android app package
    - Unsplash: Set rate limits
-   - OpenAI: Set usage limits
+   - Gemini: Set usage limits
 
 ---
 
@@ -266,7 +260,7 @@ The following dependencies are already in `build.gradle.kts`:
 
 2. **Medium Priority:**
    - ✅ OpenWeather API (Weather)
-   - ✅ OpenAI/Gemini API (AI Descriptions)
+   - ✅ Google Gemini API (AI Descriptions)
 
 3. **Low Priority (Optional):**
    - Social Media APIs (Hashtags)
@@ -288,7 +282,7 @@ The app currently works with **mock data** - all features function without API k
 - **Google Places API:** [Documentation](https://developers.google.com/maps/documentation/places)
 - **Unsplash API:** [Documentation](https://unsplash.com/documentation)
 - **OpenWeather API:** [Documentation](https://openweathermap.org/api)
-- **OpenAI API:** [Documentation](https://platform.openai.com/docs)
+- **Google Gemini API:** [Documentation](https://ai.google.dev/docs)
 
 ---
 

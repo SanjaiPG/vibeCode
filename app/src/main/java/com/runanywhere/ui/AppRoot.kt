@@ -4,6 +4,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Brush
 import com.runanywhere.startup_hackathon20.ChatViewModel
 import com.runanywhere.startup_hackathon20.ui.navigation.*
 import com.runanywhere.startup_hackathon20.ui.screens.*
@@ -58,26 +68,13 @@ fun AppRoot() {
         return
     }
 
-    // Main app with bottom navigation (shown only after login)
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                val current = currentRoute
-                bottomItems.forEach { item ->
-                    NavigationBarItem(
-                        selected = current == item.route,
-                        onClick = { currentRoute = item.route },
-                        icon = { Icon(item.icon, contentDescription = null) },
-                        label = { Text(item.label) }
-                    )
-                }
-            }
-        }
-    ) { padding ->
-        // Apply Scaffold padding so the content isn't obscured by bars
+    // Main app with floating bottom navigation
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Content area with bottom padding for floating bar
         Box(modifier = Modifier
-            .padding(padding)
-            .fillMaxSize()) {
+            .fillMaxSize()
+            .padding(bottom = 88.dp)
+        ) {
             when {
                 // Search Results Screen (AI-powered search)
                 searchQuery != null -> {
@@ -233,11 +230,20 @@ fun AppRoot() {
                 }
             }
         }
+
+        // Floating Bottom Navigation Bar
+        FloatingBottomBar(
+            currentRoute = currentRoute,
+            onNavigate = { route -> currentRoute = route },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 16.dp, vertical = 20.dp)
+        )
     }
 }
 
 @Composable
-private fun ChatTab(
+fun ChatTab(
     viewModel: ChatViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
     onNavigateToMakePlan: () -> Unit = {},
     onNavigateToHome: () -> Unit = {}
@@ -247,4 +253,87 @@ private fun ChatTab(
         onNavigateToMakePlan = onNavigateToMakePlan,
         onNavigateToHome = onNavigateToHome
     )
+}
+
+@Composable
+fun FloatingBottomBar(
+    currentRoute: String,
+    onNavigate: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(68.dp)
+            .shadow(
+                elevation = 16.dp,
+                shape = RoundedCornerShape(32.dp),
+                clip = false
+            )
+            .clip(RoundedCornerShape(32.dp))
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        Color(0xFFE0F4FF), // Very light blue
+                        Color(0xFFF5FAFF), // Almost white with hint of blue
+                        Color(0xFFE0F4FF)  // Very light blue
+                    )
+                )
+            ),
+        color = Color.Transparent,
+        tonalElevation = 0.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            bottomItems.forEach { item ->
+                val isSelected = currentRoute == item.route
+                FloatingBottomBarItem(
+                    icon = item.icon,
+                    label = item.label,
+                    isSelected = isSelected,
+                    onClick = { onNavigate(item.route) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun FloatingBottomBarItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .size(52.dp),
+        color = if (isSelected) {
+            Color(0xFF3B82F6).copy(alpha = 0.2f)
+        } else {
+            Color.Transparent
+        }
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            // Icon only
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = if (isSelected) Color(0xFF3B82F6) else Color(0xFF64748B),
+                modifier = Modifier.size(if (isSelected) 28.dp else 26.dp)
+            )
+        }
+    }
 }

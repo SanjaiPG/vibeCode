@@ -564,9 +564,9 @@ class ChatViewModel : ViewModel() {
 
                 // Add success notification message directing to My Plans
                 _messages.value += ChatMessage(
-                    "✅ Your travel plan has been created successfully!\n\n" +
-                            "📋 Go to the \"Plans\" tab at the bottom to view your complete itinerary.\n\n" +
-                            "💡 Tip: You can also like your favorite plans to access them quickly!",
+                    " Your travel plan has been created successfully!\n\n" +
+                            " Go to the \"Plans\" tab at the bottom to view your complete itinerary.\n\n" +
+                            " Tip: You can also like your favorite plans to access them quickly!",
                     isUser = false
                 )
 
@@ -576,7 +576,7 @@ class ChatViewModel : ViewModel() {
             } catch (e: Exception) {
                 _statusMessage.value = "Error generating plan: ${e.message}"
                 _messages.value += ChatMessage(
-                    "❌ Error generating plan: ${e.message}\n\nPlease try again.",
+                    " Error generating plan: ${e.message}\n\nPlease try again.",
                     isUser = false
                 )
                 Log.e("ChatViewModel", "Error in generatePlanWithAPIs: ${e.message}", e)

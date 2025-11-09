@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -114,6 +115,20 @@ fun DestinationScreen(destinationId: String, onMakePlan: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF87CEEB), // Sky blue
+                        Color(0xFFB0E0E6), // Powder blue
+                        Color(0xFFE0F4FF), // Very light blue
+                        Color(0xFFF5FAFF), // Almost white with hint of blue
+                        Color.White,        // Pure white
+                        Color.White         // Pure white continues
+                    ),
+                    startY = 0f,
+                    endY = 3000f
+                )
+            )
             .verticalScroll(scrollState)
     ) {
         // Hero Image Section
@@ -197,31 +212,77 @@ fun DestinationScreen(destinationId: String, onMakePlan: () -> Unit) {
 
         // Content Section with Tabs
         Column(Modifier.padding(20.dp)) {
-            // Tab Row
-            TabRow(selectedTabIndex = selectedTab) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 }
+            // Tab Row in Card style
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF3B82F6),
+                    indicator = { tabPositions ->
+                        if (selectedTab < tabPositions.size) {
+                            TabRowDefaults.SecondaryIndicator(
+                                modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                                color = Color(0xFF3B82F6),
+                                height = 3.dp
+                            )
+                        }
+                    }
                 ) {
-                    Text("Overview")
-                }
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 }
-                ) {
-                    Text("Hotels")
-                }
-                Tab(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 }
-                ) {
-                    Text("Food")
-                }
-                Tab(
-                    selected = selectedTab == 3,
-                    onClick = { selectedTab = 3 }
-                ) {
-                    Text("Things To Do")
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        selectedContentColor = Color(0xFF3B82F6),
+                        unselectedContentColor = Color(0xFF6B7280)
+                    ) {
+                        Text(
+                            "Overview",
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        selectedContentColor = Color(0xFF3B82F6),
+                        unselectedContentColor = Color(0xFF6B7280)
+                    ) {
+                        Text(
+                            "Hotels",
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                    Tab(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
+                        selectedContentColor = Color(0xFF3B82F6),
+                        unselectedContentColor = Color(0xFF6B7280)
+                    ) {
+                        Text(
+                            "Food",
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                    Tab(
+                        selected = selectedTab == 3,
+                        onClick = { selectedTab = 3 },
+                        selectedContentColor = Color(0xFF3B82F6),
+                        unselectedContentColor = Color(0xFF6B7280)
+                    ) {
+                        Text(
+                            "Things To Do",
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
                 }
             }
 
@@ -255,19 +316,21 @@ fun DestinationScreen(destinationId: String, onMakePlan: () -> Unit) {
                     .height(64.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = Color(0xFF3B82F6)
                 )
             ) {
                 Icon(
                     Icons.Filled.Favorite,
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
+                    tint = Color.White
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(
                     "Make a Plan",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             }
 
@@ -301,8 +364,9 @@ fun OverviewTab(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
                 modifier = Modifier
@@ -315,31 +379,32 @@ fun OverviewTab(
                     Text(
                         "Rating",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF6B7280)
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Filled.Star,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = Color(0xFFFBBF24),
                             modifier = Modifier.size(28.dp)
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
                             "${dest.rating}",
                             style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F2937)
                         )
                         Text(
                             " / 5.0",
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = Color(0xFF6B7280)
                         )
                     }
                     Text(
                         "Based on ${dest.reviewCount} reviews",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF6B7280)
                     )
                 }
 
@@ -347,19 +412,20 @@ fun OverviewTab(
                     modifier = Modifier
                         .height(60.dp)
                         .width(1.dp),
-                    color = MaterialTheme.colorScheme.outline
+                    color = Color(0xFFE5E7EB)
                 )
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         "Currency",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color(0xFF6B7280)
                     )
                     Text(
                         dest.currencyCode,
                         style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F2937)
                     )
                 }
             }
@@ -369,29 +435,34 @@ fun OverviewTab(
         Text(
             "About ${dest.name}",
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1F2937)
         )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             if (isLoadingDescription) {
-                CircularProgressIndicator(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp)
-                )
+                        .padding(20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color(0xFF3B82F6))
+                }
             } else {
                 Text(
                     aiDescription.ifEmpty { dest.description },
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(20.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight
+                    color = Color(0xFF4B5563),
+                    lineHeight = 24.sp
                 )
             }
         }
@@ -400,16 +471,21 @@ fun OverviewTab(
         if (socialData != null) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        "🔥 Trending on Social (${socialData.postCount / 1000}k posts)",
+                        " Trending on Social (${socialData.postCount / 1000}k posts)",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F2937)
                     )
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -422,7 +498,9 @@ fun OverviewTab(
                                 Text(
                                     "#$hashtag",
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    fontSize = 12.sp
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF1E40AF),
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
@@ -435,16 +513,21 @@ fun OverviewTab(
         if (estimatedCost != null) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        "💰 Estimated Budget (per person, 5 days)",
+                        " Estimated Budget (per person, 5 days)",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F2937)
                     )
 
                     BudgetRow("Accommodation", estimatedCost.accommodation, dest.currencyCode)
@@ -452,7 +535,7 @@ fun OverviewTab(
                     BudgetRow("Activities", estimatedCost.activities, dest.currencyCode)
                     BudgetRow("Transport", estimatedCost.transport, dest.currencyCode)
 
-                    Divider()
+                    Divider(color = Color(0xFFE5E7EB))
 
                     Row(
                         modifier = Modifier
@@ -463,7 +546,8 @@ fun OverviewTab(
                         Text(
                             "Total",
                             fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color(0xFF1F2937)
                         )
                         Text(
                             "${dest.currencyCode} ${String.format("%.2f", estimatedCost.total)}",
@@ -480,32 +564,50 @@ fun OverviewTab(
         if (visaInfo != null) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        "📋 Travel Requirements",
+                        " Travel Requirements",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F2937)
                     )
 
                     Row {
-                        Text("Visa Required: ", fontWeight = FontWeight.SemiBold)
                         Text(
-                            if (visaInfo.visaRequired) "❌ Yes" else "✅ No",
-                            color = if (visaInfo.visaRequired) Color(0xFFEF4444) else Color(0xFF10B981)
+                            "Visa Required: ",
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF4B5563)
+                        )
+                        Text(
+                            if (visaInfo.visaRequired) " Yes" else " No",
+                            color = if (visaInfo.visaRequired) Color(0xFFEF4444) else Color(
+                                0xFF10B981
+                            ),
+                            fontWeight = FontWeight.Bold
                         )
                     }
 
-                    Text("Passport Validity: ${visaInfo.passportValidity} months")
-                    Text("Processing Time: ${visaInfo.processingDays} days")
+                    Text(
+                        "Passport Validity: ${visaInfo.passportValidity} months",
+                        color = Color(0xFF4B5563)
+                    )
+                    Text(
+                        "Processing Time: ${visaInfo.processingDays} days",
+                        color = Color(0xFF4B5563)
+                    )
 
                     if (visaInfo.applicationUrl != null) {
                         TextButton(onClick = { /* Navigate to visa application */ }) {
-                            Text("Learn More About Visa")
+                            Text("Learn More About Visa", color = Color(0xFF3B82F6))
                         }
                     }
                 }
@@ -516,7 +618,8 @@ fun OverviewTab(
         Text(
             "Popular Reviews",
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1F2937)
         )
 
         // Rating filter buttons
@@ -579,7 +682,7 @@ fun ReviewCardWithSentiment(review: ReviewWithSentiment) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Color.White
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -590,7 +693,7 @@ fun ReviewCardWithSentiment(review: ReviewWithSentiment) {
             ) {
                 Surface(
                     shape = RoundedCornerShape(50),
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = Color(0xFFDBEAFE),
                     modifier = Modifier.size(40.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -609,7 +712,7 @@ fun ReviewCardWithSentiment(review: ReviewWithSentiment) {
                             Icon(
                                 Icons.Filled.Star,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = Color(0xFFFBBF24),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -632,7 +735,7 @@ fun ReviewCardWithSentiment(review: ReviewWithSentiment) {
             Text(
                 review.comment,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color(0xFF4B5563)
             )
             Text(
                 review.date,
@@ -655,12 +758,17 @@ fun HotelsTab(hotels: List<Hotel>) {
         Text(
             "Hotels (${hotels.size})",
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1F2937)
         )
         hotels.forEach { hotel ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -697,12 +805,17 @@ fun RestaurantsTab(restaurants: List<Restaurant>) {
         Text(
             "Restaurants (${restaurants.size})",
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1F2937)
         )
         restaurants.forEach { restaurant ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -733,14 +846,19 @@ fun AttractionsTab(attractions: List<Attraction>) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            "🎯 Things To Do (${attractions.size})",
+            " Things To Do (${attractions.size})",
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1F2937)
         )
         attractions.forEach { attraction ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -760,8 +878,8 @@ fun AttractionsTab(attractions: List<Attraction>) {
                             Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(16.dp))
                             Text("${attraction.rating}")
                         }
-                        Text("⏱️ ${attraction.duration}", fontSize = 12.sp, color = Color(0xFF6B7280))
-                        Text("💵 ${attraction.estimatedCost}", fontSize = 12.sp, color = Color(0xFF10B981))
+                        Text("⏱ ${attraction.duration}", fontSize = 12.sp, color = Color(0xFF6B7280))
+                        Text(" ${attraction.estimatedCost}", fontSize = 12.sp, color = Color(0xFF10B981))
                         Text(
                             attraction.description,
                             fontSize = 12.sp,
