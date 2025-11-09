@@ -2148,7 +2148,7 @@ fun ProfileScreen(
 
                     Divider(color = Color(0xFFE5E7EB))
 
-                    // Stats grid with actual data
+                    // Stats grid with simple black text style
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
@@ -2156,9 +2156,9 @@ fun ProfileScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 "${likedDestinations.size}",
-                                style = MaterialTheme.typography.headlineMedium,
+                                style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0EA5E9)
+                                color = Color.Black
                             )
                             Text(
                                 "Saved Places",
@@ -2169,9 +2169,9 @@ fun ProfileScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 "${allPlans.size}",
-                                style = MaterialTheme.typography.headlineMedium,
+                                style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF10B981)
+                                color = Color.Black
                             )
                             Text(
                                 "Travel Plans",
@@ -2182,9 +2182,9 @@ fun ProfileScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 "$uniqueCountries",
-                                style = MaterialTheme.typography.headlineMedium,
+                                style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFF59E0B)
+                                color = Color.Black
                             )
                             Text(
                                 "Countries",
@@ -2469,7 +2469,9 @@ fun ProfileScreen(
                 }
             }
 
-            // Action Buttons
+            // Action Buttons - Dynamic and Modern Design
+
+            // Edit/Save Profile Button - Gradient style
             Button(
                 onClick = {
                     if (isEditing) {
@@ -2492,44 +2494,73 @@ fun ProfileScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF3B82F6)
+                    containerColor = if (isEditing) Color(0xFF10B981) else Color(0xFF3B82F6)
                 )
             ) {
-                Text(
-                    if (isEditing) "Save Changes" else "Edit Profile",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        if (isEditing) "✓" else "✏️",
+                        fontSize = 20.sp
+                    )
+                    Text(
+                        if (isEditing) "Save Changes" else "Edit Profile",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
-            OutlinedButton(
+            // Back to Home Button - Outlined style with icon
+            Button(
                 onClick = onBack,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color(0xFF3B82F6)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 2.dp,
+                    pressedElevation = 4.dp
                 )
             ) {
-                Text(
-                    "Back to Home",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color(0xFF3B82F6),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        "Back to Home",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF3B82F6)
+                    )
+                }
             }
 
-            // Logout Button
-            OutlinedButton(
+            // Logout Button - Red accent with shadow
+            Button(
                 onClick = onLogout,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color(0xFFEF4444)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFEF4444)
                 ),
-                border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFEF4444))
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 8.dp
+                )
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -2539,7 +2570,8 @@ fun ProfileScreen(
                     Text(
                         "Logout",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
             }
