@@ -297,7 +297,13 @@ fun MakePlanScreen(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                     disabledBorderColor = MaterialTheme.colorScheme.outline,
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Black.copy(alpha = 0.7f),
+                    focusedLabelColor = Color.Black.copy(alpha = 0.7f),
+                    unfocusedLabelColor = Color.Black.copy(alpha = 0.6f),
+                    disabledLabelColor = Color.Black.copy(alpha = 0.5f)
                 ),
                 singleLine = true,
                 enabled = true,
@@ -370,7 +376,13 @@ fun MakePlanScreen(
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Black.copy(alpha = 0.7f),
+                    focusedLabelColor = Color.Black.copy(alpha = 0.7f),
+                    unfocusedLabelColor = Color.Black.copy(alpha = 0.6f),
+                    disabledLabelColor = Color.Black.copy(alpha = 0.5f)
                 ),
                 singleLine = true,
                 readOnly = true,
@@ -426,6 +438,12 @@ fun MakePlanScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Black.copy(alpha = 0.7f),
+                    focusedLabelColor = Color.Black.copy(alpha = 0.7f),
+                    unfocusedLabelColor = Color.Black.copy(alpha = 0.6f),
+                    disabledLabelColor = Color.Black.copy(alpha = 0.5f)
                 ),
                 singleLine = true,
                 readOnly = true,
@@ -687,7 +705,13 @@ fun MakePlanScreen(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        disabledTextColor = Color.Black.copy(alpha = 0.7f),
+                        focusedLabelColor = Color.Black.copy(alpha = 0.7f),
+                        unfocusedLabelColor = Color.Black.copy(alpha = 0.6f),
+                        disabledLabelColor = Color.Black.copy(alpha = 0.5f)
                     )
                 )
 
@@ -736,7 +760,13 @@ fun MakePlanScreen(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        disabledTextColor = Color.Black.copy(alpha = 0.7f),
+                        focusedLabelColor = Color.Black.copy(alpha = 0.7f),
+                        unfocusedLabelColor = Color.Black.copy(alpha = 0.6f),
+                        disabledLabelColor = Color.Black.copy(alpha = 0.5f)
                     )
                 )
 
@@ -1242,6 +1272,12 @@ private fun CustomTextField(
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
+            disabledTextColor = Color.Black.copy(alpha = 0.7f),
+            focusedLabelColor = Color.Black.copy(alpha = 0.7f),
+            unfocusedLabelColor = Color.Black.copy(alpha = 0.6f),
+            disabledLabelColor = Color.Black.copy(alpha = 0.5f)
         ),
         singleLine = true
     )
