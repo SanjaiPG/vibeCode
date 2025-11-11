@@ -9,25 +9,24 @@
 
 **An intelligent travel companion that transforms how people plan and experience their journeys**
 
-[Features](#-key-features) • [Architecture](#-architecture) • [Installation](#-installation) • [Documentation](#-documentation) • [License](#-license)
+[Features](#key-features) • [Architecture](#architecture) • [Installation](#installation) • [Documentation](#documentation) • [License](#license)
 
 </div>
 
 ---
 
-## Table of Contents
+---
 
-- [Overview](#-overview)
-- [The Problem We Solve](#-the-problem-we-solve)
-- [Real-World Use Cases](#-real-world-use-cases)
-- [Key Features](#-key-features)
-- [Technology Stack](#-technology-stack)
-- [Architecture](#-architecture)
-- [Getting Started](#-getting-started)
-- [Project Structure](#-project-structure)
-- [API Configuration](#-api-configuration)
-- [App Screens](#-app-screens)
-- [AI Integration](#-ai-integration)
+- [Overview](#overview)
+- [The Problem We Solve](#the-problem-we-solve)
+- [Real-World Use Cases](#real-world-use-cases)
+- [Key Features](#key-features)
+- [Technology Stack](#technology-stack)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [API Configuration](#api-configuration)
+- [App Screens](#app-screens)
+- [AI Integration](#ai-integration)
 
 ---
 
@@ -275,7 +274,7 @@ GOOGLE_PLACES_API_KEY=your_google_places_api_key_here
 UNSPLASH_ACCESS_KEY=your_unsplash_access_key_here
 ```
 
-> **Note:** See [API Configuration](#-api-configuration) section for detailed instructions on
+> **Note:** See [API Configuration](#api-configuration) section for detailed instructions on
 > obtaining these keys.
 
 #### 3. **Add Firebase Configuration**
