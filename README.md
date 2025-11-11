@@ -15,7 +15,7 @@
 
 ---
 
-## 📖 Table of Contents
+## Table of Contents
 
 - [Overview](#-overview)
 - [The Problem We Solve](#-the-problem-we-solve)
@@ -31,7 +31,7 @@
 
 ---
 
-## 🌍 Overview
+## Overview
 
 **GoQuest** is a next-generation Android travel planning application that leverages on-device AI to
 create personalized travel itineraries. Built with modern Android development practices using
@@ -45,21 +45,21 @@ privacy-focused, offline-capable intelligent assistance without relying on cloud
 
 Traditional travel planning is:
 
-- ⏰ **Time-consuming** - Hours spent researching destinations, accommodations, and activities
-- 🔀 **Fragmented** - Information scattered across multiple websites and apps
-- 💸 **Expensive** - Paid travel agents and planning services
-- 📱 **Generic** - One-size-fits-all recommendations that don't match personal preferences
+- **Time-consuming** - Hours spent researching destinations, accommodations, and activities
+- **Fragmented** - Information scattered across multiple websites and apps
+- **Expensive** - Paid travel agents and planning services
+- **Generic** - One-size-fits-all recommendations that don't match personal preferences
 
 **GoQuest solves these problems by providing:**
 
-- ✨ AI-powered personalized itineraries in minutes
-- 🎯 Unified platform for discovery, planning, and management
-- 🆓 Free intelligent travel assistance
-- 🎨 Customized recommendations based on your preferences, budget, and travel style
+- AI-powered personalized itineraries in minutes
+- Unified platform for discovery, planning, and management
+- Free intelligent travel assistance
+- Customized recommendations based on your preferences, budget, and travel style
 
 ---
 
-## 🎯 The Problem We Solve
+## The Problem We Solve
 
 ### For Individual Travelers
 
@@ -94,7 +94,7 @@ mode using on-device AI.
 
 ---
 
-## 🚀 Real-World Use Cases
+## Real-World Use Cases
 
 ### 1. **Family Vacation Planning**
 
@@ -164,16 +164,16 @@ mode using on-device AI.
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 🏠 **Destination Discovery**
+### **Destination Discovery**
 
 - Beautiful card-based interface showcasing popular destinations
 - High-quality images and key information (currency, location, ratings)
 - Interactive search with real-time filtering
 - Curated "Famous Destinations" recommendations
 
-### 🤖 **AI-Powered Itinerary Generation**
+### **AI-Powered Itinerary Generation**
 
 - On-device LLM ensures privacy and offline capability
 - Personalized plans based on:
@@ -185,35 +185,27 @@ mode using on-device AI.
     - Transportation mode (Flight/Train/Bus/Car/Bike)
 - Day-by-day breakdowns with timing, activities, and costs
 
-### 💬 **Interactive AI Chatbot**
+### **Interactive AI Chatbot**
 
 - Natural language conversation with AI travel assistant
 - Modify and refine itineraries through chat
 - Get instant answers to travel queries
 - Context-aware responses based on your preferences
 
-### 📋 **Plan Management**
+### **Plan Management**
 
 - Save itineraries to Cart for later access
 - Wishlist favorite destinations
 - Export plans as PDF or text files
 - Share itineraries with friends and family
 
-### 🗺️ **Visual Exploration**
+### **Visual Exploration**
 
 - Integrated Google Maps for destination visualization
 - Location-based attraction discovery
 - Interactive map previews on home screen
 
-### 🎨 **Modern UI/UX**
-
-- Material Design 3 components
-- Smooth animations and transitions
-- Gradient backgrounds and elegant cards
-- Responsive layouts optimized for all screen sizes
-- Dark mode support for comfortable viewing
-
-### 🔐 **User Authentication**
+### **User Authentication**
 
 - Firebase Authentication integration
 - Email/password and Google Sign-In support
@@ -222,14 +214,13 @@ mode using on-device AI.
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### **Frontend**
 
 - **Kotlin** - Modern, concise, and safe programming language
 - **Jetpack Compose** - Declarative UI toolkit for building native Android UI
 - **Material Design 3** - Latest design system for beautiful, accessible interfaces
-- **Compose Navigation** - Type-safe navigation between screens
 
 ### **Backend & Services**
 
@@ -250,74 +241,9 @@ mode using on-device AI.
 - **Unsplash API** - High-quality destination images
 - **Coil** - Fast image loading and caching
 
-### **Networking & Data**
-
-- **Retrofit** - Type-safe HTTP client
-- **Ktor** - Asynchronous networking framework
-- **Gson & Moshi** - JSON serialization/deserialization
-- **OkHttp** - HTTP client with interceptors and logging
-
-### **Architecture Components**
-
-- **ViewModel** - UI state management
-- **StateFlow** - Reactive state handling
-- **Coroutines** - Asynchronous programming
-- **Room** - Local database for caching
-- **WorkManager** - Background task scheduling
-
 ---
 
-## 🏗️ Architecture
-
-GoQuest follows **Clean Architecture** principles with clear separation of concerns:
-
-```
-┌─────────────────────────────────────────────────┐
-│              Presentation Layer                 │
-│  (Jetpack Compose UI + ViewModels + StateFlow) │
-└────────────────┬────────────────────────────────┘
-                 │
-┌────────────────▼─────────────────────┐
-│              Domain Layer                       │
-│     (Use Cases, Business Logic, Entities)       │
-└────────────────┬────────────────────────────────┘
-                 │
-┌────────────────▼────────────────────────────────┐
-│               Data Layer                        │
-│  (Repositories, Data Sources, API Services)     │
-└─────────────────────────────────────────────────┘
-```
-
-### **Key Architectural Patterns**
-
-- **MVVM (Model-View-ViewModel)** - Separates UI logic from business logic
-- **Repository Pattern** - Abstracts data sources from business logic
-- **Dependency Injection** - Loose coupling and testability
-- **Single Source of Truth** - Centralized state management
-- **Unidirectional Data Flow** - Predictable state updates
-
-### **Module Structure**
-
-```
-com.runanywhere.startup_hackathon20/
-├── ui/                     # UI layer
-│   ├── screens/           # Composable screens
-│   ├── navigation/        # Navigation graph
-│   ├── components/        # Reusable UI components
-│   └── theme/            # Material theming
-├── data/                  # Data layer
-│   ├── repository/       # Data repositories
-│   ├── model/            # Data models
-│   └── api/              # API services
-├── domain/               # Business logic (planned)
-│   ├── usecase/         # Use cases
-│   └── entity/          # Domain entities
-└── di/                   # Dependency injection
-```
-
----
-
-## 🚀 Getting Started
+## Getting Started
 
 ### **Prerequisites**
 
@@ -332,8 +258,8 @@ com.runanywhere.startup_hackathon20/
 #### 1. **Clone the Repository**
 
 ```bash
-git clone https://github.com/yourusername/goquest-travel-planner.git
-cd goquest-travel-planner
+git clone https://github.com/SanjaiPG/GoQuest.git
+cd GoQuest
 ```
 
 #### 2. **Configure API Keys**
@@ -347,9 +273,6 @@ GOOGLE_PLACES_API_KEY=your_google_places_api_key_here
 
 # Unsplash (for destination images)
 UNSPLASH_ACCESS_KEY=your_unsplash_access_key_here
-
-# OpenAI (optional, for cloud AI fallback)
-OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 > **Note:** See [API Configuration](#-api-configuration) section for detailed instructions on
@@ -370,24 +293,13 @@ Place LLM model files (`.gguf` format) in:
 app/src/main/assets/models/
 ```
 
-Recommended models:
-
-- **Llama-3.2-1B-Instruct** (1.2GB) - Fast, good for basic queries
-- **Phi-3.5-mini-instruct** (2.3GB) - Balanced performance
-- **Gemma-2-2B-Instruct** (1.6GB) - High quality, moderate size
-
 #### 5. **Build and Run**
 
-```bash
-./gradlew assembleDebug
-./gradlew installDebug
-```
-
-Or simply click **Run** ▶️ in Android Studio.
+```click **Run** ▶️ in Android Studio.```
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 GoQuest/
@@ -434,7 +346,7 @@ GoQuest/
 
 ---
 
-## 🔑 API Configuration
+## API Configuration
 
 ### **1. Google Maps API**
 
@@ -470,18 +382,9 @@ GoQuest/
 6. Enable **Cloud Firestore** (Start in production mode)
 7. Enable **Storage** (for profile pictures)
 
-### **4. OpenAI API (Optional)**
-
-1. Sign up at [OpenAI Platform](https://platform.openai.com/)
-2. Generate API key
-3. Add to `local.properties`:
-   ```properties
-   OPENAI_API_KEY=sk-proj-XXXXXXXXXXXXXXXXXXXXXXXX
-   ```
-
 ---
 
-## 📱 App Screens
+## App Screens
 
 ### **1. Login Screen**
 
@@ -552,8 +455,8 @@ GoQuest/
 - "Your Itinerary is Ready!" message
 - Full markdown-formatted plan
 - Export options:
-    - 📄 Export as PDF
-    - 📝 Export as Text File
+    - Export as PDF
+    - Export as Text File
 - Share button
 - Save to Cart button
 
@@ -571,7 +474,7 @@ GoQuest/
 
 ---
 
-## 🤖 AI Integration
+## AI Integration
 
 ### **On-Device AI with RunAnywhere SDK**
 
