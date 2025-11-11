@@ -9,7 +9,7 @@
 
 **An intelligent travel companion that transforms how people plan and experience their journeys**
 
-[Features](#key-features) • [Architecture](#architecture) • [Installation](#installation) • [Documentation](#documentation) • [License](#license)
+[Features](#key-features) • [Installation](#installation) • [Documentation](#documentation) • [License](#license)
 
 </div>
 
