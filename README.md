@@ -36,8 +36,6 @@ https://unstop.com/hackathons/vibe-with-perplexity-guru-gobind-singh-indraprasth
 
 ## Team
 
-This project was built as a hackathon entry by the VibeCode team. Add or update the list below with your team members and roles.
-
 - Sanjai P G 
 - Sarvanthikha SR
 - Sanjjiiev S
