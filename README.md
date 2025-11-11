@@ -23,10 +23,25 @@
 - [Key Features](#key-features)
 - [Technology Stack](#technology-stack)
 - [Getting Started](#getting-started)
-- [Project Structure](#project-structure)
-- [API Configuration](#api-configuration)
-- [App Screens](#app-screens)
-- [AI Integration](#ai-integration)
+ 
+---
+
+## Hackathon Submission
+
+This project was developed as a hackathon submission for **VibeState '25** (Guru Gobind Singh Indraprastha University). For details about the hackathon, see:
+
+https://unstop.com/hackathons/vibe-with-perplexity-guru-gobind-singh-indraprastha-university-ggsipu-delhi-1577987
+
+---
+
+## Team
+
+This project was built as a hackathon entry by the VibeCode team. Add or update the list below with your team members and roles.
+
+- Sanjai P G 
+- Sarvanthikha SR
+- Sanjjiiev S
+- Eshanaa Ajith K
 
 ---
 
