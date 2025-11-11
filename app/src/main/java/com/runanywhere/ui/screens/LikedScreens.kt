@@ -16,11 +16,13 @@ import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -33,6 +35,184 @@ import com.runanywhere.data.api.DestinationApiService
 import kotlinx.coroutines.launch
 
 @Composable
+fun TravelPlanCardWithImage(
+    plan: com.runanywhere.data.model.Plan,
+    onOpenPlan: (String) -> Unit
+) {
+    val repo = remember { DI.repo }
+    var imageUrl by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    // Extract destination name from plan title and get its image
+    val destinationName = plan.title.substringBefore("(").substringAfter("→").trim()
+
+    LaunchedEffect(plan.id) {
+        scope.launch {
+            // Try to get destination from repository first
+            val destination = repo.getPopularDestinations().find {
+                it.name.contains(destinationName, ignoreCase = true) ||
+                        destinationName.contains(it.name, ignoreCase = true)
+            }
+
+            if (destination != null) {
+                imageUrl = DestinationApiService.getDestinationImageUrl(destination.name)
+            } else {
+                // Fallback to using the extracted destination name
+                imageUrl = DestinationApiService.getDestinationImageUrl(destinationName)
+            }
+        }
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(24.dp),
+                clip = false
+            )
+            .clickable { onOpenPlan(plan.id) },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.dp
+        )
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Background image or gradient
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = plan.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                // Fallback blue gradient similar to destination cards
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF87CEEB),
+                                    Color(0xFF0EA5E9),
+                                    Color(0xFF3B82F6)
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        destinationName.take(2).uppercase(),
+                        style = MaterialTheme.typography.displayMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+            }
+
+            // Gradient overlay for better text readability
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.7f)
+                            ),
+                            startY = 80f
+                        )
+                    )
+            )
+
+            // Plan information overlay
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Plan title
+                Text(
+                    plan.title.substringBefore("(").trim(),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    lineHeight = 28.sp,
+                    maxLines = 2
+                )
+
+                // Duration and badges row
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Duration badge if available
+                    val durationMatch = Regex("\\((\\d+)\\s*nights?\\)").find(plan.title)
+                    if (durationMatch != null) {
+                        Surface(
+                            color = Color.White.copy(alpha = 0.9f),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    Icons.Filled.Schedule,
+                                    contentDescription = null,
+                                    tint = Color(0xFF3B82F6),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    durationMatch.groupValues[1] + " nights",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = Color(0xFF3B82F6),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    // Travel plan badge
+                    Surface(
+                        color = Color(0xFF0EA5E9).copy(alpha = 0.9f),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Flight,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                "Plan",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun AllPlansScreen(onOpenPlan: (String) -> Unit) {
     val repo = remember { DI.repo }
     val likedPlanIds = repo.likedPlans.collectAsState().value
@@ -42,8 +222,6 @@ fun AllPlansScreen(onOpenPlan: (String) -> Unit) {
         repo.getAllPlans()
     }
     val wishlistPlans = allPlans.filter { likedPlanIds.contains(it.id) }
-    // Derive all plans reactively - recompose when plansVersion changes (new plan created)
-
 
     Column(
         Modifier
@@ -51,10 +229,10 @@ fun AllPlansScreen(onOpenPlan: (String) -> Unit) {
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF87CEEB), // Sky blue
-                        Color(0xFFB0E0E6), // Powder blue
-                        Color(0xFFE0F4FF), // Very light blue
-                        Color(0xFFF5FAFF), // Almost white with hint of blue
+                        Color(0xFF87CEEB), // Sky blue - same as homepage
+                        Color(0xFFB0E0E6), // Powder blue - same as homepage
+                        Color(0xFFE0F4FF), // Very light blue - same as homepage
+                        Color(0xFFF5FAFF), // Almost white with hint of blue - same as homepage
                         Color.White,        // Pure white
                         Color.White         // Pure white continues
                     ),
@@ -63,197 +241,120 @@ fun AllPlansScreen(onOpenPlan: (String) -> Unit) {
                 )
             )
     ) {
-        // Header integrated directly on sky gradient - no blue box
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 40.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        // Header with homepage blue theme
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = Color.Transparent
         ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(56.dp)
-                    .background(Color.White.copy(alpha = 0.9f), CircleShape),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 48.dp)
             ) {
-                Icon(
-                    Icons.Filled.List,
-                    contentDescription = null,
-                    tint = Color(0xFF3B82F6),
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-            Column {
-                Text(
-                    "My Travel Plans",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    "${allPlans.size} ${if (allPlans.size == 1) "plan" else "plans"} generated",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White.copy(alpha = 0.95f)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Modern icon container with blue gradient
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .shadow(8.dp, CircleShape)
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF0EA5E9),
+                                        Color(0xFF3B82F6)
+                                    )
+                                ),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Flight,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            "My Travel Plans",
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            fontSize = 28.sp
+                        )
+                        Text(
+                            "${allPlans.size} ${if (allPlans.size == 1) "adventure" else "adventures"} awaiting",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
 
         if (allPlans.isEmpty()) {
-            // Empty state
+            // Enhanced empty state with blue theme
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(120.dp)
+                            .size(140.dp)
+                            .shadow(12.dp, CircleShape)
                             .background(
-                                Color(0xFF3B82F6).copy(alpha = 0.1f),
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFF0EA5E9).copy(alpha = 0.2f),
+                                        Color(0xFF3B82F6).copy(alpha = 0.1f)
+                                    )
+                                ),
                                 CircleShape
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            Icons.Filled.List,
+                            Icons.Filled.Flight,
                             contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = Color(0xFF3B82F6).copy(alpha = 0.5f)
+                            modifier = Modifier.size(72.dp),
+                            tint = Color(0xFF0EA5E9).copy(alpha = 0.6f)
                         )
                     }
                     Text(
-                        "No plans yet",
-                        style = MaterialTheme.typography.headlineMedium,
+                        "No adventures yet",
+                        style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1F2937)
                     )
                     Text(
-                        "Create your first travel plan!",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFF6B7280)
+                        "Start planning your dream getaway!",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color(0xFF6B7280),
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                items(allPlans) { p ->
-                    val isLiked = likedPlanIds.contains(p.id)
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenPlan(p.id) },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.White
-                        ),
-                        elevation = CardDefaults.cardElevation(
-                            defaultElevation = 4.dp,
-                            pressedElevation = 8.dp
-                        )
-                    ) {
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                // Top colored section with gradient background
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(120.dp)
-                                        .background(
-                                            Brush.linearGradient(
-                                                colors = listOf(
-                                                    Color(0xFF87CEEB),
-                                                    Color(0xFF3B82F6),
-                                                    Color(0xFF2563EB)
-                                                )
-                                            )
-                                        )
-                                        .padding(20.dp)
-                                ) {
-                                    Column(
-                                        modifier = Modifier.fillMaxSize(),
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(
-                                            p.title,
-                                            style = MaterialTheme.typography.headlineSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            maxLines = 2,
-                                            fontSize = 22.sp
-                                        )
-                                        Spacer(Modifier.height(8.dp))
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            Surface(
-                                                color = Color.White.copy(alpha = 0.25f),
-                                                shape = RoundedCornerShape(12.dp)
-                                            ) {
-                                                Text(
-                                                    "Travel Plan",
-                                                    modifier = Modifier.padding(
-                                                        horizontal = 12.dp,
-                                                        vertical = 6.dp
-                                                    ),
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = Color.White,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.sp
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                items(allPlans) { plan ->
 
-                                // Bottom white section with details and like button
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp)
-                                ) {
-                                    Text(
-                                        "Tap to view full itinerary",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color(0xFF6B7280),
-                                        fontSize = 12.sp
-                                    )
-
-                                    // Like Button in Bottom Right
-                                    IconButton(
-                                        onClick = {
-                                            if (isLiked) {
-                                                repo.unlikePlan(p.id)
-                                            } else {
-                                                repo.likePlan(p.id)
-                                            }
-                                        },
-                                        modifier = Modifier
-                                            .align(Alignment.BottomEnd)
-                                            .size(36.dp)
-                                            .offset(x = 6.dp, y = 6.dp)
-                                    ) {
-                                        Icon(
-                                            if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                            contentDescription = if (isLiked) "Remove from favorites" else "Add to favorites",
-                                            tint = if (isLiked) Color(0xFFEF4444) else Color(
-                                                0xFF9CA3AF
-                                            ),
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                    }
+                    // Travel Plan Card with destination image
+                    TravelPlanCardWithImage(
+                        plan = plan,
+                        onOpenPlan = onOpenPlan
+                    )
                 }
             }
         }
@@ -275,10 +376,10 @@ fun LikedPlansScreen(onOpenPlan: (String) -> Unit) {
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF87CEEB), // Sky blue
-                        Color(0xFFB0E0E6), // Powder blue
-                        Color(0xFFE0F4FF), // Very light blue
-                        Color(0xFFF5FAFF), // Almost white with hint of blue
+                        Color(0xFF87CEEB), // Sky blue - same as homepage
+                        Color(0xFFB0E0E6), // Powder blue - same as homepage
+                        Color(0xFFE0F4FF), // Very light blue - same as homepage
+                        Color(0xFFF5FAFF), // Almost white with hint of blue - same as homepage
                         Color.White,        // Pure white
                         Color.White         // Pure white continues
                     ),
@@ -287,57 +388,32 @@ fun LikedPlansScreen(onOpenPlan: (String) -> Unit) {
                 )
             )
     ) {
-        // Header integrated directly on sky gradient - no blue box
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 40.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        // Header with blue theme
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = Color.Transparent
         ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(56.dp)
-                    .background(Color.White.copy(alpha = 0.9f), CircleShape),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 48.dp)
             ) {
-                Icon(
-                    Icons.Filled.Favorite,
-                    contentDescription = null,
-                    tint = Color(0xFF3B82F6),
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-            Column {
-                Text(
-                    "My Cart ",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    "${plans.size} itineraries saved",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White.copy(alpha = 0.95f)
-                )
-            }
-        }
-
-        if (plans.isEmpty()) {
-            // Empty state
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Modern icon container with blue gradient
                     Box(
                         modifier = Modifier
-                            .size(120.dp)
+                            .size(64.dp)
+                            .shadow(8.dp, CircleShape)
                             .background(
-                                Color(0xFF3B82F6).copy(alpha = 0.1f),
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF0EA5E9),
+                                        Color(0xFF3B82F6)
+                                    )
+                                ),
                                 CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -345,132 +421,87 @@ fun LikedPlansScreen(onOpenPlan: (String) -> Unit) {
                         Icon(
                             Icons.Filled.Favorite,
                             contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = Color(0xFF3B82F6).copy(alpha = 0.5f)
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            "My Favorites",
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            fontSize = 28.sp
+                        )
+                        Text(
+                            "${plans.size} ${if (plans.size == 1) "saved plan" else "saved plans"}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+
+        if (plans.isEmpty()) {
+            // Enhanced empty state with blue theme
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(140.dp)
+                            .shadow(12.dp, CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFF0EA5E9).copy(alpha = 0.2f),
+                                        Color(0xFF3B82F6).copy(alpha = 0.1f)
+                                    )
+                                ),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Favorite,
+                            contentDescription = null,
+                            modifier = Modifier.size(72.dp),
+                            tint = Color(0xFF0EA5E9).copy(alpha = 0.6f)
                         )
                     }
                     Text(
-                        "No saved plans yet",
-                        style = MaterialTheme.typography.headlineMedium,
+                        "No favorites yet",
+                        style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1F2937)
                     )
                     Text(
-                        "Start planning your adventures!",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFF6B7280)
+                        "Save your favorite travel plans here!",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color(0xFF6B7280),
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                items(plans) { p ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenPlan(p.id) },
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.White
-                        ),
-                        elevation = CardDefaults.cardElevation(
-                            defaultElevation = 4.dp,
-                            pressedElevation = 8.dp
-                        )
-                    ) {
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                // Top colored section with gradient background
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(120.dp)
-                                        .background(
-                                            Brush.linearGradient(
-                                                colors = listOf(
-                                                    Color(0xFFFF6B9D),
-                                                    Color(0xFFC238BE),
-                                                    Color(0xFF8B5CF6)
-                                                )
-                                            )
-                                        )
-                                        .padding(20.dp)
-                                ) {
-                                    Column(
-                                        modifier = Modifier.fillMaxSize(),
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Text(
-                                            p.title,
-                                            style = MaterialTheme.typography.headlineSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            maxLines = 2,
-                                            fontSize = 22.sp
-                                        )
-                                        Spacer(Modifier.height(8.dp))
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            Surface(
-                                                color = Color.White.copy(alpha = 0.25f),
-                                                shape = RoundedCornerShape(12.dp)
-                                            ) {
-                                                Text(
-                                                    "Saved Plan",
-                                                    modifier = Modifier.padding(
-                                                        horizontal = 12.dp,
-                                                        vertical = 6.dp
-                                                    ),
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = Color.White,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.sp
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
+                items(plans) { plan ->
 
-                                // Bottom white section with details and like button
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp)
-                                ) {
-                                    Text(
-                                        "Tap to view full itinerary",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color(0xFF6B7280),
-                                        fontSize = 12.sp
-                                    )
-
-                                    // Wishlist Button in Bottom Right
-                                    IconButton(
-                                        onClick = {
-                                            repo.unlikePlan(p.id)
-                                        },
-                                        modifier = Modifier
-                                            .align(Alignment.BottomEnd)
-                                            .size(36.dp)
-                                            .offset(x = 6.dp, y = 6.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Filled.Favorite,
-                                            contentDescription = "Remove from Cart",
-                                            tint = Color(0xFFEF4444),
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                    }
+                    // Use the same card with images for favorite plans
+                    TravelPlanCardWithImage(
+                        plan = plan,
+                        onOpenPlan = onOpenPlan
+                    )
                 }
             }
         }
@@ -492,10 +523,10 @@ fun LikedDestinationsScreen(onOpenDestination: (String) -> Unit) {
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF87CEEB), // Sky blue
-                        Color(0xFFB0E0E6), // Powder blue
-                        Color(0xFFE0F4FF), // Very light blue
-                        Color(0xFFF5FAFF), // Almost white with hint of blue
+                        Color(0xFF87CEEB), // Sky blue - same as homepage
+                        Color(0xFFB0E0E6), // Powder blue - same as homepage
+                        Color(0xFFE0F4FF), // Very light blue - same as homepage
+                        Color(0xFFF5FAFF), // Almost white with hint of blue - same as homepage
                         Color.White,        // Pure white
                         Color.White         // Pure white continues
                     ),
@@ -504,57 +535,32 @@ fun LikedDestinationsScreen(onOpenDestination: (String) -> Unit) {
                 )
             )
     ) {
-        // Header integrated directly on sky gradient - no blue box
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 40.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        // Header with blue theme - same as homepage
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = Color.Transparent
         ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(56.dp)
-                    .background(Color.White.copy(alpha = 0.9f), CircleShape),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 48.dp)
             ) {
-                Icon(
-                    Icons.Filled.LocationOn,
-                    contentDescription = null,
-                    tint = Color(0xFF0EA5E9),
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-            Column {
-                Text(
-                    "Wishlist ",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    "${places.size} destinations saved",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White.copy(alpha = 0.95f)
-                )
-            }
-        }
-
-        if (places.isEmpty()) {
-            // Empty state
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Modern icon container with blue gradient
                     Box(
                         modifier = Modifier
-                            .size(120.dp)
+                            .size(64.dp)
+                            .shadow(8.dp, CircleShape)
                             .background(
-                                Color(0xFF0EA5E9).copy(alpha = 0.1f),
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF0EA5E9),
+                                        Color(0xFF3B82F6)
+                                    )
+                                ),
                                 CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -562,20 +568,72 @@ fun LikedDestinationsScreen(onOpenDestination: (String) -> Unit) {
                         Icon(
                             Icons.Filled.LocationOn,
                             contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = Color(0xFF0EA5E9).copy(alpha = 0.5f)
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            "My Wishlist",
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            fontSize = 28.sp
+                        )
+                        Text(
+                            "${places.size} ${if (places.size == 1) "destination" else "destinations"} saved",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+
+        if (places.isEmpty()) {
+            // Enhanced empty state with blue theme
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(140.dp)
+                            .shadow(12.dp, CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFF0EA5E9).copy(alpha = 0.2f),
+                                        Color(0xFF3B82F6).copy(alpha = 0.1f)
+                                    )
+                                ),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(72.dp),
+                            tint = Color(0xFF0EA5E9).copy(alpha = 0.6f)
                         )
                     }
                     Text(
                         "No saved places yet",
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1F2937)
                     )
                     Text(
                         "Discover amazing destinations!",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFF6B7280)
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color(0xFF6B7280),
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -590,12 +648,8 @@ fun LikedDestinationsScreen(onOpenDestination: (String) -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(places) { d ->
-                    WishlistDestinationCard(
+                    CleanWishlistDestinationCard(
                         destination = d,
-                        isLiked = true,
-                        onToggleLike = {
-                            repo.unlikeDestination(d.id)
-                        },
                         onOpenDestination = { onOpenDestination(d.id) }
                     )
                 }
@@ -604,12 +658,10 @@ fun LikedDestinationsScreen(onOpenDestination: (String) -> Unit) {
     }
 }
 
-// Wishlist Destination Card - same style as homepage but optimized for single column
+// Clean Wishlist Destination Card without like button - same style as travel plans
 @Composable
-fun WishlistDestinationCard(
+fun CleanWishlistDestinationCard(
     destination: com.runanywhere.data.model.Destination,
-    isLiked: Boolean,
-    onToggleLike: () -> Unit,
     onOpenDestination: (String) -> Unit
 ) {
     var imageUrl by remember { mutableStateOf<String?>(null) }
@@ -626,14 +678,18 @@ fun WishlistDestinationCard(
         onClick = { onOpenDestination(destination.id) },
         modifier = Modifier
             .fillMaxWidth()
-            .height(280.dp),
-        shape = RoundedCornerShape(20.dp),
+            .height(200.dp)
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(24.dp),
+                clip = false
+            ),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp,
-            pressedElevation = 8.dp
+            defaultElevation = 0.dp
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -654,7 +710,7 @@ fun WishlistDestinationCard(
                                 colors = listOf(
                                     Color(0xFF0EA5E9),
                                     Color(0xFF3B82F6),
-                                    Color(0xFF2563EB)
+                                    Color(0xFF6366F1)
                                 )
                             )
                         ),
@@ -662,7 +718,7 @@ fun WishlistDestinationCard(
                 ) {
                     Text(
                         destination.name.take(2).uppercase(),
-                        style = MaterialTheme.typography.displayLarge,
+                        style = MaterialTheme.typography.displayMedium,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -679,27 +735,28 @@ fun WishlistDestinationCard(
                                 Color.Transparent,
                                 Color.Black.copy(alpha = 0.7f)
                             ),
-                            startY = 150f
+                            startY = 100f
                         )
                     )
             )
 
-            // Card details over image
+            // Card details over image - cleaner layout
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxWidth()
                     .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     destination.name,
                     color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.headlineMedium,
                     fontSize = 24.sp,
                     maxLines = 1
                 )
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -718,34 +775,40 @@ fun WishlistDestinationCard(
                         maxLines = 1
                     )
                 }
+
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Rating
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    // Rating badge
+                    Surface(
+                        color = Color(0xFFFBBF24).copy(alpha = 0.9f),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Icon(
-                            Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = Color(0xFFFBBF24),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            "${destination.rating}",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                "${destination.rating}",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     // Currency badge
                     Surface(
                         color = Color.White.copy(alpha = 0.9f),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Text(
                             destination.currencyCode,
@@ -755,25 +818,32 @@ fun WishlistDestinationCard(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }
-                }
-            }
 
-            // Like button in top right
-            IconButton(
-                onClick = {
-                    onToggleLike()
-                },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(12.dp)
-                    .size(48.dp)
-            ) {
-                Icon(
-                    if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = "Unlike",
-                    tint = if (isLiked) Color(0xFFEF4444) else Color(0xFF9CA3AF),
-                    modifier = Modifier.size(24.dp)
-                )
+                    // Wishlist indicator - small badge
+                    Surface(
+                        color = Color(0xFFFF6B9D).copy(alpha = 0.9f),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Filled.Favorite,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                "Saved",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
         }
     }
